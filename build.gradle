@@ -1,24 +1,27 @@
-apply plugin: 'java-library'
+//apply plugin: 'java-library'
+apply plugin: 'java'
+apply plugin: 'application'
 apply plugin: 'eclipse'
-apply plugin: 'idea'
+//apply plugin: 'idea'
 
 version = '0.0.1'
-
-dependencies {
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
-    //api 'org.apache.commons:commons-math3:3.6.1'
-
-    implementation 'com.google.guava:guava:23.0'
-
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
-}
 
 // In this section you declare where to find the dependencies of your project
 repositories {
     // Use jcenter for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
+    mavenCentral()
     jcenter()
+}
+
+dependencies {
+
+    compile 'com.google.guava:guava:23.0'
+    // fast csv library
+    compile 'com.univocity:univocity-parsers:2.6.3'
+
+    // Use JUnit test framework
+    testCompile 'junit:junit:4.12'
 }
 
 jar {
