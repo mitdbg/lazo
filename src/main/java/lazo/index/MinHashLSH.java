@@ -78,6 +78,7 @@ public class MinHashLSH {
 	float x = a;
 	while (x < b) {
 	    area += this.p(x + 0.5 * IP, rows, bands) * IP;
+	    x = x + IP;
 	}
 	return (float) area;
     }
