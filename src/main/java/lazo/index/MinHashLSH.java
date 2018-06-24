@@ -19,7 +19,7 @@ public class MinHashLSH {
     private float false_positive_rate;
     private float false_negative_rate;
 
-    private List<Map<long[], List<Object>>> hashTables;
+    private List<Map<Long, List<Object>>> hashTables;
     private int[] hashRanges;
     private Map<Object, List<long[]>> keys;
 
@@ -32,7 +32,7 @@ public class MinHashLSH {
 	// 0.5 are good default values for false positive and negative
 	this.computeOptimalParameters(this.threshold, this.k, 0.5f, 0.5f);
 
-	this.initializeHashTables();
+	this.initializeHashTables(bands);
 	this.keys = new HashMap<>();
     }
 
@@ -41,7 +41,7 @@ public class MinHashLSH {
 	this.k = k;
 	this.computeOptimalParameters(this.threshold, this.k, false_positive_rate, false_negative_rate);
 
-	this.initializeHashTables();
+	this.initializeHashTables(bands);
 	this.keys = new HashMap<>();
     }
 
@@ -51,16 +51,16 @@ public class MinHashLSH {
 	this.bands = bands;
 	this.rows = rows;
 
-	this.initializeHashTables();
+	this.initializeHashTables(bands);
 	this.keys = new HashMap<>();
     }
 
-    private void initializeHashTables() {
+    private void initializeHashTables(int bands) {
 	this.hashTables = new ArrayList<>();
 	this.hashRanges = new int[this.bands];
 	// hash tables
-	for (int i = 0; i < hashTables.size(); i++) {
-	    Map<long[], List<Object>> mp = new HashMap<>();
+	for (int i = 0; i < bands; i++) {
+	    Map<Long, List<Object>> mp = new HashMap<>();
 	    hashTables.add(mp);
 	}
 	// hash ranges
@@ -69,26 +69,29 @@ public class MinHashLSH {
 	}
     }
 
-    private double p(double s, int rows, int bands) {
-	return 1 - Math.pow((1 - Math.pow(s, rows)), bands);
-    }
-
-    private float integrate(float a, float b, int rows, int bands) {
-	float area = 0;
-	float x = a;
-	while (x < b) {
-	    area += this.p(x + 0.5 * IP, rows, bands) * IP;
+    private float computeFalsePositiveProbability(float threshold, int bands, int rows) {
+	float start = 0.0f;
+	float end = threshold;
+	float area = 0.0f;
+	float x = start;
+	while (x < end) {
+	    area += 1 - Math.pow((1 - Math.pow(x + 0.5 * IP, rows)), bands) * IP;
 	    x = x + IP;
 	}
 	return (float) area;
-    }
 
-    private float computeFalsePositiveProbability(float threshold, int bands, int rows) {
-	return this.integrate(0.0f, threshold, rows, bands);
     }
 
     private float computeFalseNegativeProbability(float threshold, int bands, int rows) {
-	return this.integrate(threshold, 0.0f, rows, bands);
+	float start = threshold;
+	float end = 1.0f;
+	float area = 0.0f;
+	float x = start;
+	while (x < end) {
+	    area += 1 - (1 - Math.pow((1 - Math.pow(x + 0.5 * IP, rows)), bands) * IP);
+	    x = x + IP;
+	}
+	return (float) area;
     }
 
     private void computeOptimalParameters(float threshold, int k, float fp_rate, float fn_rate) {
@@ -115,6 +118,10 @@ public class MinHashLSH {
 	this.bands = optimalBands;
     }
 
+    private long segmentHash(long[] segment) {
+	return Arrays.hashCode(segment);
+    }
+
     public boolean insert(Object key, Sketch mh) {
 
 	List<long[]> segments = new ArrayList<>();
@@ -127,12 +134,14 @@ public class MinHashLSH {
 
 	for (int i = 0; i < this.bands; i++) {
 	    long[] sg = segments.get(i);
-	    Map<long[], List<Object>> hashTable = hashTables.get(i);
-	    if (hashTable.get(sg) == null) {
+	    Map<Long, List<Object>> hashTable = hashTables.get(i);
+	    // FIXME: get repr for sg that is hashable and works with maps
+	    long segId = segmentHash(sg);
+	    if (hashTable.get(segId) == null) {
 		List<Object> l = new ArrayList<>();
-		hashTable.put(sg, l);
+		hashTable.put(segId, l);
 	    }
-	    hashTable.get(sg).add(key);
+	    hashTable.get(segId).add(key);
 	}
 
 	return true;
@@ -142,11 +151,12 @@ public class MinHashLSH {
 	Set<Object> candidates = new HashSet<>();
 	for (int i = 0; i < this.bands; i++) {
 	    int start = this.hashRanges[i];
-	    int end = this.hashRanges[i] * this.rows;
-	    Map<long[], List<Object>> hashTable = hashTables.get(i);
+	    int end = (this.hashRanges[i] + 1) * this.rows;
+	    Map<Long, List<Object>> hashTable = hashTables.get(i);
 	    long[] segment = Arrays.copyOfRange(mh.getHashValues(), start, end);
-	    if (hashTable.containsKey(segment)) {
-		candidates.addAll(hashTable.get(segment));
+	    long segId = segmentHash(segment);
+	    if (hashTable.containsKey(segId)) {
+		candidates.addAll(hashTable.get(segId));
 	    }
 	}
 	return candidates;
