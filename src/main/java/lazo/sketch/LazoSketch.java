@@ -1,18 +1,18 @@
 package lazo.sketch;
 
+import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
+import com.clearspring.analytics.stream.cardinality.ICardinality;
 import com.google.common.hash.HashFunction;
 
 public class LazoSketch implements Sketch {
 
-    private final int maxHash = (1 << 32) - 1;
-
     private int k;
     private int seed;
     private HashFunction hf;
-    private long[] hashValues;
 
-    private int cardinality;
+    private long cardinality = -1;
     private Sketch underlyingSketch;
+    private ICardinality ic;
 
     public LazoSketch(int k, SketchType sketchType) {
 	this.k = k;
@@ -21,18 +21,20 @@ public class LazoSketch implements Sketch {
 	switch (sketchType) {
 	case MINHASH:
 	    this.underlyingSketch = new MinHash(k);
+	    break;
 	case MINHASH_OPTIMAL:
 	    this.underlyingSketch = new MinHashOptimal(k);
+	    break;
 	default:
-	    // FIXME
+	    System.out.println("Sketch type unrecognized");
 	}
 	// Cardinality estimator here
-	// TODO:
+	ic = new HyperLogLogPlus(18, 25);
     }
 
     @Override
     public void update(String value) {
-	// TODO: update cardinality estimation
+	ic.offer(value);
 	this.underlyingSketch.update(value);
     }
 
@@ -40,7 +42,10 @@ public class LazoSketch implements Sketch {
 	return underlyingSketch;
     }
 
-    public int getCardinality() {
+    public long getCardinality() {
+	if (this.cardinality == -1) {
+	    this.cardinality = ic.cardinality();
+	}
 	return this.cardinality;
     }
 

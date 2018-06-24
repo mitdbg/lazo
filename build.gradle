@@ -19,6 +19,8 @@ dependencies {
     compile 'com.google.guava:guava:23.0'
     // fast csv library
     compile 'com.univocity:univocity-parsers:2.6.3'
+    // hyperloglog library
+    compile 'com.clearspring.analytics:stream:2.9.5'
 
     // Use JUnit test framework
     testCompile 'junit:junit:4.12'
