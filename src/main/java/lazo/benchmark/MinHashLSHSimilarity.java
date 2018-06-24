@@ -18,6 +18,7 @@ import com.univocity.parsers.csv.CsvParserSettings;
 
 import lazo.index.MinHashLSH;
 import lazo.sketch.MinHash;
+import lazo.sketch.Sketch;
 
 public class MinHashLSHSimilarity {
 
@@ -84,6 +85,8 @@ public class MinHashLSHSimilarity {
     public List<Tuple<Integer, Integer>> computeAllPairs(File[] files, float threshold, int k) {
 	List<Tuple<Integer, Integer>> similarPairs = new ArrayList<>();
 	MinHashLSH index = new MinHashLSH(threshold, k);
+	// Create sketches and index
+	Map<Integer, Sketch> idToSketch = new HashMap<>();
 	for (int i = 0; i < files.length; i++) {
 	    System.out.println("Processing: " + i + "/" + files.length);
 	    System.out.println(files[i].getAbsolutePath());
@@ -100,6 +103,16 @@ public class MinHashLSHSimilarity {
 		    }
 		}
 		index.insert(id, mh);
+		idToSketch.put(id, mh);
+	    }
+	}
+	// Query to retrieve pairs
+	for (Entry<Integer, Sketch> e : idToSketch.entrySet()) {
+	    int id = e.getKey();
+	    MinHash mh = (MinHash) e.getValue();
+	    Set<Object> candidates = index.query(mh);
+	    for (Object o : candidates) {
+		similarPairs.add(new Tuple<Integer, Integer>(id, (int) o));
 	    }
 	}
 	return similarPairs;
