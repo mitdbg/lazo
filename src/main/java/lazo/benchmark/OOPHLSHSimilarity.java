@@ -16,12 +16,16 @@ import java.util.Set;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 
-public class AllPairsSimilarity {
+import lazo.index.MinHashLSH;
+import lazo.sketch.MinHashOptimal;
+import lazo.sketch.Sketch;
+
+public class OOPHLSHSimilarity {
 
     private CsvParser parser;
     private Map<Integer, String> hashIdToName;
 
-    public AllPairsSimilarity() {
+    public OOPHLSHSimilarity() {
 	// csv parser
 	CsvParserSettings settings = new CsvParserSettings();
 	settings.getFormat().setLineSeparator("\n");
@@ -78,56 +82,41 @@ public class AllPairsSimilarity {
 	return tableSets;
     }
 
-    private float computeJS(Set<String> a, Set<String> b) {
-	// more efficient union and ix
-	float js = 0;
-	Set<String> smaller = null;
-	Set<String> larger = null;
-	if (a.size() >= b.size()) {
-	    smaller = b;
-	    larger = a;
-	} else {
-	    smaller = a;
-	    larger = b;
-	}
-	int hits = 0;
-	for (String s : smaller) {
-	    if (larger.contains(s)) {
-		hits += 1;
-	    }
-	}
-	int ix = hits;
-	int union = (smaller.size() + larger.size()) - ix;
-	js = ix / union;
-	return js;
-    }
-
-    public List<Tuple<Integer, Integer>> computeAllPairs(File[] files, float threshold) {
+    public List<Tuple<Integer, Integer>> computeAllPairs(File[] files, float threshold, int k) {
 	List<Tuple<Integer, Integer>> similarPairs = new ArrayList<>();
+	MinHashLSH index = new MinHashLSH(threshold, k);
+	// Create sketches and index
+	Map<Integer, Sketch> idToSketch = new HashMap<>();
 	for (int i = 0; i < files.length; i++) {
 	    System.out.println("Processing: " + i + "/" + files.length);
 	    System.out.println(files[i].getAbsolutePath());
 	    // Read file
-	    Map<Integer, Set<String>> pivotTable = obtainColumns(files[i]);
-	    for (int j = (i + 1); j < files.length; j++) {
-		Map<Integer, Set<String>> table = obtainColumns(files[j]);
-		// Compare columns
-		for (Entry<Integer, Set<String>> entry : pivotTable.entrySet()) {
-		    int pivotKey = entry.getKey();
-		    Set<String> a = entry.getValue();
-		    for (Entry<Integer, Set<String>> entryB : table.entrySet()) {
-			int key = entryB.getKey();
-			Set<String> b = entryB.getValue();
-			float js = computeJS(a, b);
-
-			// Set<String> union = Sets.union(a, b);
-			// Set<String> intersection = Sets.intersection(a, b);
-			// float js = intersection.size() / union.size();
-			if (js >= threshold) {
-			    similarPairs.add(new Tuple<Integer, Integer>(pivotKey, key));
-			}
+	    Map<Integer, Set<String>> table = obtainColumns(files[i]);
+	    // Compute mh and insert to index
+	    for (Entry<Integer, Set<String>> e : table.entrySet()) {
+		int id = e.getKey();
+		MinHashOptimal mh = new MinHashOptimal(k);
+		Set<String> values = e.getValue();
+		boolean valid = false;
+		for (String value : values) {
+		    if (value != null) {
+			mh.update(value);
+			valid = true;
 		    }
 		}
+		if (valid) {
+		    index.insert(id, mh);
+		    idToSketch.put(id, mh);
+		}
+	    }
+	}
+	// Query to retrieve pairs
+	for (Entry<Integer, Sketch> e : idToSketch.entrySet()) {
+	    int id = e.getKey();
+	    MinHashOptimal mh = (MinHashOptimal) e.getValue();
+	    Set<Object> candidates = index.query(mh);
+	    for (Object o : candidates) {
+		similarPairs.add(new Tuple<Integer, Integer>(id, (int) o));
 	    }
 	}
 	return similarPairs;
@@ -145,29 +134,31 @@ public class AllPairsSimilarity {
 
     public static void main(String args[]) {
 
-	AllPairsSimilarity aps = new AllPairsSimilarity();
+	OOPHLSHSimilarity oss = new OOPHLSHSimilarity();
 
 	if (args.length < 3) {
-	    System.out.println("Usage: <inputPath> <outputPath> <similarityThreshold>");
+	    System.out.println("Usage: <inputPath> <outputPath> <similarityThreshold> <minhash-permutations>");
 	}
 
 	String inputPath = args[0];
 	String outputPath = args[1];
 	float similarityThreshold = Float.parseFloat(args[2]);
+	int k = Integer.parseInt(args[3]);
 
-	File[] filesInPath = aps.enumerateFiles(inputPath);
+	File[] filesInPath = oss.enumerateFiles(inputPath);
 	System.out.println("Found " + filesInPath.length + " files to process");
 	long start = System.currentTimeMillis();
-	List<Tuple<Integer, Integer>> output = aps.computeAllPairs(filesInPath, similarityThreshold);
+	List<Tuple<Integer, Integer>> output = oss.computeAllPairs(filesInPath, similarityThreshold, k);
 	long end = System.currentTimeMillis();
 	for (Tuple<Integer, Integer> pair : output) {
 	    int xid = pair.x;
 	    int yid = pair.y;
-	    String xname = aps.hashIdToName.get(xid);
-	    String yname = aps.hashIdToName.get(yid);
+	    String xname = oss.hashIdToName.get(xid);
+	    String yname = oss.hashIdToName.get(yid);
 	    System.out.println(xname + " ~= " + yname);
 	}
 	System.out.println("Total time: " + (end - start));
 	System.out.println("Total sim pairs: " + output.size());
     }
+
 }

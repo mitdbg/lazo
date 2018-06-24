@@ -35,7 +35,7 @@ public class SketchUtils {
 	return hf;
     }
 
-    public static long[] initializeHashValues(int k, int fillValue) {
+    public static long[] initializeHashValues(int k, long fillValue) {
 	long[] hashValues = new long[k];
 	Arrays.fill(hashValues, fillValue);
 	return hashValues;

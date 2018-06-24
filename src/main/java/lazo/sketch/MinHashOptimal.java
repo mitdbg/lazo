@@ -10,12 +10,12 @@ import com.google.common.hash.HashFunction;
 public class MinHashOptimal implements Sketch {
 
     private final long mersennePrime = (1 << 61) - 1;
-    private final int maxHash = (1 << 32) - 1;
-    private final int hashRange = (1 << 32);
-    private final int empty = maxHash + 1;
+    // private final long maxHash = (1L << 32) - 2;
+    // private final long empty = maxHash + 1;
+    private final long empty = Long.MAX_VALUE;
 
     private final int random;
-    private final long theHashValue;
+    private final int theHashValue;
 
     private int seed;
     private int k;
@@ -32,29 +32,28 @@ public class MinHashOptimal implements Sketch {
 	this.k = k;
 	this.seed = 666;
 	this.hf = SketchUtils.initializeHashFunction(HashFunctionType.MURMUR3, this.k);
-	this.hashValues = SketchUtils.initializeHashValues(k, this.maxHash);
+	this.hashValues = SketchUtils.initializeHashValues(k, this.empty);
 	this.initializePermutations();
 
 	Random rnd = new Random(this.seed);
-	this.random = rnd.nextInt((int) Math.pow(2, 32)) + 1;
+	this.random = rnd.nextInt(Integer.MAX_VALUE - 1) + 1;
 	this.theHashValue = this.random % 2 == 0 ? this.random : this.random + 1;
 
-	this.logPermutations = (int) Math.log(this.k);
+	this.logPermutations = (int) (Math.log(this.k) / Math.log(2)) + 1;
     }
 
     public MinHashOptimal(int k, int seed, HashFunctionType hashFunctionType) {
 	this.k = k;
 	this.seed = seed;
 	this.hf = SketchUtils.initializeHashFunction(hashFunctionType, this.seed);
-	this.hashValues = SketchUtils.initializeHashValues(k, this.maxHash);
+	this.hashValues = SketchUtils.initializeHashValues(k, this.empty);
 	this.initializePermutations();
 
 	Random rnd = new Random(this.seed);
 	this.random = rnd.nextInt((int) Math.pow(2, 32)) + 1;
 	this.theHashValue = this.random % 2 == 0 ? this.random : this.random + 1;
 
-	this.logPermutations = (int) Math.log(this.k);
-
+	this.logPermutations = (int) (Math.log(this.k) / Math.log(2));
     }
 
     private void initializePermutations() {
@@ -68,8 +67,11 @@ public class MinHashOptimal implements Sketch {
 	b = bs.toArray();
     }
 
+    boolean used = false;
+
     @Override
     public void update(String value) {
+	used = true;
 	HashCode hc = hf.hashString(value, Charset.defaultCharset());
 	long hv = hc.asLong();
 
@@ -93,8 +95,11 @@ public class MinHashOptimal implements Sketch {
 
     private int getRandomDoubleHash(int bucketId, int count) {
 	int toh = ((bucketId + 1) << 10) + count;
-	int newValue = (int) (this.theHashValue * toh << 3) >> (32 - this.logPermutations);
-	return newValue;
+	long newValue = ((int) (this.theHashValue * toh << 3) >> (32 - this.logPermutations));
+	newValue = Math.abs(newValue);
+	if (newValue == this.k)
+	    newValue -= 1;
+	return (int) newValue;
     }
 
     public void densify() {
@@ -102,6 +107,17 @@ public class MinHashOptimal implements Sketch {
 	    if (this.hashValues[i] == this.empty) {
 		int nonce = 0;
 		while (this.hashValues[i] == this.empty) {
+		    // boolean allsame = true;
+		    // for (int k = 0; k < this.hashValues.length; k++) {
+		    // if (this.hashValues[k] != this.empty) {
+		    // allsame = false;
+		    // }
+		    // }
+		    // if (allsame) {
+		    // System.out.println("This is broken");
+		    // System.out.println("USED?: " + used);
+		    // System.exit(0);
+		    // }
 		    nonce++;
 		    int index = this.getRandomDoubleHash(i, nonce);
 		    this.hashValues[i] = this.hashValues[index];
@@ -115,7 +131,7 @@ public class MinHashOptimal implements Sketch {
     }
 
     public void clear() {
-	SketchUtils.initializeHashValues(this.k, this.maxHash);
+	SketchUtils.initializeHashValues(this.k, this.empty);
     }
 
 }
