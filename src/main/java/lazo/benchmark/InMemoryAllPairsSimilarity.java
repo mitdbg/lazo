@@ -1,16 +1,17 @@
 package lazo.benchmark;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import com.univocity.parsers.csv.CsvParser;
@@ -105,37 +106,41 @@ public class InMemoryAllPairsSimilarity {
 	return js;
     }
 
-    public List<Tuple<Integer, Integer>> computeAllPairs(File[] files, float threshold) {
-	List<Tuple<Integer, Integer>> similarPairs = new ArrayList<>();
+    private boolean validSet(Set<String> set) {
+	boolean valid = false;
+	for (String s : set) {
+	    if (s != null) {
+		valid = true;
+		break;
+	    }
+	}
+	return valid;
+    }
+
+    public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float threshold) {
+	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
 	// Read all columns first
 	Map<Integer, Set<String>> allColumns = obtainColumns(files);
+
+	Object[] colIds = allColumns.keySet().toArray();
 	// All-pairs with columns in-memory -> avoid repeated IO cost
-	for (Entry<Integer, Set<String>> ea : allColumns.entrySet()) {
-	    Set<String> a = ea.getValue();
-	    int aKey = ea.getKey();
-	    for (Entry<Integer, Set<String>> eb : allColumns.entrySet()) {
-		int bKey = eb.getKey();
-		Set<String> b = eb.getValue();
+	for (int i = 0; i < colIds.length; i++) {
+	    int aKey = (Integer) colIds[i];
+	    Set<String> a = allColumns.get(aKey);
+	    if (!validSet(a)) {
+		continue;
+	    }
+	    // i + 1 to not compare to itself
+	    for (int j = (i + 1); j < colIds.length; j++) {
+		int bKey = (Integer) colIds[j];
+		Set<String> b = allColumns.get(bKey);
 		float js = computeJS(a, b);
-		// Set<String> union = Sets.union(a, b);
-		// Set<String> intersection = Sets.intersection(a, b);
-		// float js = intersection.size() / union.size();
 		if (js >= threshold) {
-		    similarPairs.add(new Tuple<Integer, Integer>(aKey, bKey));
+		    similarPairs.add(new Pair<Integer, Integer>(aKey, bKey));
 		}
 	    }
 	}
 	return similarPairs;
-    }
-
-    public class Tuple<X, Y> {
-	public final X x;
-	public final Y y;
-
-	public Tuple(X x, Y y) {
-	    this.x = x;
-	    this.y = y;
-	}
     }
 
     public static void main(String args[]) {
@@ -153,9 +158,9 @@ public class InMemoryAllPairsSimilarity {
 	File[] filesInPath = aps.enumerateFiles(inputPath);
 	System.out.println("Found " + filesInPath.length + " files to process");
 	long start = System.currentTimeMillis();
-	List<Tuple<Integer, Integer>> output = aps.computeAllPairs(filesInPath, similarityThreshold);
+	Set<Pair<Integer, Integer>> output = aps.computeAllPairs(filesInPath, similarityThreshold);
 	long end = System.currentTimeMillis();
-	for (Tuple<Integer, Integer> pair : output) {
+	for (Pair<Integer, Integer> pair : output) {
 	    int xid = pair.x;
 	    int yid = pair.y;
 	    String xname = aps.hashIdToName.get(xid);
@@ -164,5 +169,24 @@ public class InMemoryAllPairsSimilarity {
 	}
 	System.out.println("Total time: " + (end - start));
 	System.out.println("Total sim pairs: " + output.size());
+
+	// Write output in format x,y for all pairs
+	File f = new File(outputPath);
+	BufferedWriter bw = null;
+	try {
+	    bw = new BufferedWriter(new FileWriter(f));
+	    for (Pair<Integer, Integer> pair : output) {
+		int xid = pair.x;
+		int yid = pair.y;
+		String line = xid + "," + yid + '\n';
+		bw.write(line);
+	    }
+	    bw.flush();
+	    bw.close();
+	} catch (IOException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}
+	System.out.println("Results output to: " + outputPath);
     }
 }

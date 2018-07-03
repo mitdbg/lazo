@@ -1,11 +1,13 @@
 package lazo.benchmark;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -102,45 +104,50 @@ public class AllPairsSimilarity {
 	return js;
     }
 
-    public List<Tuple<Integer, Integer>> computeAllPairs(File[] files, float threshold) {
-	List<Tuple<Integer, Integer>> similarPairs = new ArrayList<>();
+    private boolean validSet(Set<String> set) {
+	boolean valid = false;
+	for (String s : set) {
+	    if (s != null) {
+		valid = true;
+		break;
+	    }
+	}
+	return valid;
+    }
+
+    public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float threshold) {
+	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
+	// Set<Pair<Integer, Integer>> seenPairs = new HashSet<>();
 	for (int i = 0; i < files.length; i++) {
 	    System.out.println("Processing: " + i + "/" + files.length);
 	    System.out.println(files[i].getAbsolutePath());
 	    // Read file
 	    Map<Integer, Set<String>> pivotTable = obtainColumns(files[i]);
-	    for (int j = (i + 1); j < files.length; j++) {
+	    for (int j = i; j < files.length; j++) { // start from the same
 		Map<Integer, Set<String>> table = obtainColumns(files[j]);
 		// Compare columns
 		for (Entry<Integer, Set<String>> entry : pivotTable.entrySet()) {
 		    int pivotKey = entry.getKey();
 		    Set<String> a = entry.getValue();
+		    if (!validSet(a))
+			continue; // discard all-null value columns
 		    for (Entry<Integer, Set<String>> entryB : table.entrySet()) {
 			int key = entryB.getKey();
+			if (pivotKey == key) {
+			    continue; // avoid same keys within table
+			}
 			Set<String> b = entryB.getValue();
 			float js = computeJS(a, b);
 
-			// Set<String> union = Sets.union(a, b);
-			// Set<String> intersection = Sets.intersection(a, b);
-			// float js = intersection.size() / union.size();
 			if (js >= threshold) {
-			    similarPairs.add(new Tuple<Integer, Integer>(pivotKey, key));
+			    Pair<Integer, Integer> newPair1 = new Pair<Integer, Integer>(pivotKey, key);
+			    similarPairs.add(newPair1);
 			}
 		    }
 		}
 	    }
 	}
 	return similarPairs;
-    }
-
-    public class Tuple<X, Y> {
-	public final X x;
-	public final Y y;
-
-	public Tuple(X x, Y y) {
-	    this.x = x;
-	    this.y = y;
-	}
     }
 
     public static void main(String args[]) {
@@ -158,9 +165,9 @@ public class AllPairsSimilarity {
 	File[] filesInPath = aps.enumerateFiles(inputPath);
 	System.out.println("Found " + filesInPath.length + " files to process");
 	long start = System.currentTimeMillis();
-	List<Tuple<Integer, Integer>> output = aps.computeAllPairs(filesInPath, similarityThreshold);
+	Set<Pair<Integer, Integer>> output = aps.computeAllPairs(filesInPath, similarityThreshold);
 	long end = System.currentTimeMillis();
-	for (Tuple<Integer, Integer> pair : output) {
+	for (Pair<Integer, Integer> pair : output) {
 	    int xid = pair.x;
 	    int yid = pair.y;
 	    String xname = aps.hashIdToName.get(xid);
@@ -169,5 +176,24 @@ public class AllPairsSimilarity {
 	}
 	System.out.println("Total time: " + (end - start));
 	System.out.println("Total sim pairs: " + output.size());
+
+	// Write output in format x,y for all pairs
+	File f = new File(outputPath);
+	BufferedWriter bw = null;
+	try {
+	    bw = new BufferedWriter(new FileWriter(f));
+	    for (Pair<Integer, Integer> pair : output) {
+		int xid = pair.x;
+		int yid = pair.y;
+		String line = xid + "," + yid + '\n';
+		bw.write(line);
+	    }
+	    bw.flush();
+	    bw.close();
+	} catch (IOException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}
+	System.out.println("Results output to: " + outputPath);
     }
 }

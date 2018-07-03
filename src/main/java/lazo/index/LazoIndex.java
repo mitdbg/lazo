@@ -14,7 +14,7 @@ public class LazoIndex {
     private int k;
     private float d;
     private int numIndexes;
-    private Map<Float, MinHashLSH> indexes;
+    private Map<Integer, MinHashLSH> indexes;
     private Map<Object, Long> keyCardinality;
 
     public LazoIndex(int k, float d) {
@@ -27,7 +27,7 @@ public class LazoIndex {
 	this.indexes = new HashMap<>();
 	for (int i = 0; i < this.numIndexes; i++) {
 	    float threshold = d * i;
-	    this.indexes.put(threshold, new MinHashLSH(threshold, k));
+	    this.indexes.put(i, new MinHashLSH(threshold, k));
 	}
     }
 
@@ -41,7 +41,7 @@ public class LazoIndex {
 	this.indexes = new HashMap<>();
 	for (int i = 0; i < this.numIndexes; i++) {
 	    float threshold = d * i;
-	    this.indexes.put(threshold, new MinHashLSH(threshold, k));
+	    this.indexes.put(i, new MinHashLSH(threshold, k));
 	}
     }
 
@@ -81,13 +81,10 @@ public class LazoIndex {
 	// TODO: is it necessary to pre-materialize this?
 	Map<Object, Float> partialCandidates = new HashMap<>();
 	Set<Object> seenCandidates = new HashSet<>();
-	// FIXME: start querying by 0.05 and not 0, so basically start from i =
-	// 1 ??
 	for (int i = 0; i < this.numIndexes; i++) {
 	    int key_threshold = this.numIndexes - i - 1;
-	    // float queryingThreshold = (float) (this.d * i);
 	    float queryingThreshold = key_threshold * this.d;
-	    Set<Object> thresholdCandidates = indexes.get(queryingThreshold).query(sketch.getSketch());
+	    Set<Object> thresholdCandidates = indexes.get(key_threshold).query(sketch.getSketch());
 	    for (Object pCandidate : thresholdCandidates) {
 		if (!seenCandidates.contains(pCandidate)) {
 		    partialCandidates.put(pCandidate, queryingThreshold);
@@ -115,49 +112,56 @@ public class LazoIndex {
 	    long unLower = this.estimateUnion(maxCardinality, alphaLower);
 	    long unUpper = this.estimateUnion(maxCardinality, alphaUpper);
 
-	    float estJSLower = unLower > 0 ? ixLower / unLower : 0;
-	    float estJSUpper = unUpper > 0 ? ixUpper / unUpper : 0;
-	    float estJCXLower = queryCardinality > 0 ? ixLower / queryCardinality : 0;
-	    float estJCXUpper = queryCardinality > 0 ? ixUpper / queryCardinality : 0;
-	    float estJCYLower = candidateCardinality > 0 ? ixLower / candidateCardinality : 0;
-	    float estJCYUpper = candidateCardinality > 0 ? ixUpper / candidateCardinality : 0;
+	    float estJSLower = unLower > 0 ? (float) ixLower / (float) unLower : 0F;
+	    float estJSUpper = unUpper > 0 ? (float) ixUpper / (float) unUpper : 0F;
+	    float estJCXLower = queryCardinality > 0 ? (float) ixLower / (float) queryCardinality : 0F;
+	    float estJCXUpper = queryCardinality > 0 ? (float) ixUpper / (float) queryCardinality : 0F;
+	    float estJCYLower = candidateCardinality > 0 ? (float) ixLower / (float) candidateCardinality : 0F;
+	    float estJCYUpper = candidateCardinality > 0 ? (float) ixUpper / (float) candidateCardinality : 0F;
 
-	    float jcxMaxBound = queryCardinality > 0 ? minCardinality / queryCardinality : 0;
+	    float jcxMaxBound = queryCardinality > 0 ? (float) minCardinality / (float) queryCardinality : 0F;
 	    if (jcxMaxBound > 1)
-		jcxMaxBound = 1;
-	    float jcyMaxBound = candidateCardinality > 0 ? minCardinality / candidateCardinality : 0;
+		jcxMaxBound = 1F;
+	    float jcyMaxBound = candidateCardinality > 0 ? (float) minCardinality / (float) candidateCardinality : 0F;
 	    if (jcyMaxBound > 1)
-		jcyMaxBound = 1;
+		jcyMaxBound = 1F;
 
 	    if (!this.ECH) {
 		float avgJs = (estJSLower + estJSUpper) / 2;
 		float avgJcx = (estJCXLower + estJCXUpper) / 2;
 		float avgJcy = (estJCYLower + estJCYUpper) / 2;
-		candidates.add(new LazoCandidate(key, avgJs, avgJcx, avgJcy));
+		if (avgJs >= js_threshold && avgJcx >= jcx_threshold) {
+		    candidates.add(new LazoCandidate(key, avgJs, avgJcx, avgJcy));
+		}
+		continue;
 	    }
 
 	    if (estJCXUpper > jcxMaxBound && jcxMaxBound > 0) {
 		long correctedAlpha = this.correctEstimate(minCardinality, queryCardinality, jcxMaxBound);
-		estJSUpper = (minCardinality - correctedAlpha) / (maxCardinality + correctedAlpha);
-		estJCYUpper = candidateCardinality > 0 ? (minCardinality - correctedAlpha) / candidateCardinality : 0;
+		estJSUpper = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
+		estJCYUpper = candidateCardinality > 0
+			? (float) (minCardinality - correctedAlpha) / (float) candidateCardinality : 0F;
 		estJCXUpper = jcxMaxBound;
 	    } else if (estJCYUpper > jcyMaxBound && jcyMaxBound > 0) {
 		long correctedAlpha = this.correctEstimate(minCardinality, candidateCardinality, jcyMaxBound);
-		estJSUpper = (minCardinality - correctedAlpha) / (maxCardinality + correctedAlpha);
-		estJCXUpper = queryCardinality > 0 ? (minCardinality - correctedAlpha) / queryCardinality : 0;
+		estJSUpper = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
+		estJCXUpper = queryCardinality > 0
+			? (float) (minCardinality - correctedAlpha) / (float) queryCardinality : 0F;
 		estJCYUpper = jcyMaxBound;
 	    }
 
 	    if (estJCXLower > jcxMaxBound && jcxMaxBound > 0) {
 		long correctedAlpha = this.correctEstimate(minCardinality, queryCardinality, jcxMaxBound);
-		estJSLower = (minCardinality - correctedAlpha) / (maxCardinality + correctedAlpha);
-		estJCYLower = candidateCardinality > 0 ? (minCardinality - correctedAlpha) / candidateCardinality : 0;
+		estJSLower = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
+		estJCYLower = candidateCardinality > 0
+			? (float) (minCardinality - correctedAlpha) / (float) candidateCardinality : 0F;
 		estJCXLower = jcxMaxBound;
 
 	    } else if (estJCYLower > jcyMaxBound && jcyMaxBound > 0) {
 		long correctedAlpha = this.correctEstimate(minCardinality, candidateCardinality, jcyMaxBound);
-		estJSLower = (minCardinality - correctedAlpha) / (maxCardinality + correctedAlpha);
-		estJCXLower = queryCardinality > 0 ? (minCardinality - correctedAlpha) / queryCardinality : 0;
+		estJSLower = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
+		estJCXLower = queryCardinality > 0
+			? (float) (minCardinality - correctedAlpha) / (float) queryCardinality : 0F;
 		estJCYLower = jcyMaxBound;
 	    }
 	    float avgJs = (estJSLower + estJSUpper) / 2;
@@ -165,7 +169,7 @@ public class LazoIndex {
 	    float avgJcy = (estJCYLower + estJCYUpper) / 2;
 
 	    // Filter out results based on thresholds
-	    if (avgJs > js_threshold && avgJcx > jcx_threshold) {
+	    if (avgJs >= js_threshold && avgJcx >= jcx_threshold) {
 		candidates.add(new LazoCandidate(key, avgJs, avgJcx, avgJcy));
 	    }
 	}

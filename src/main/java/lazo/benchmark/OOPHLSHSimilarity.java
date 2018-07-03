@@ -1,11 +1,13 @@
 package lazo.benchmark;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -82,8 +84,8 @@ public class OOPHLSHSimilarity {
 	return tableSets;
     }
 
-    public List<Tuple<Integer, Integer>> computeAllPairs(File[] files, float threshold, int k) {
-	List<Tuple<Integer, Integer>> similarPairs = new ArrayList<>();
+    public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float threshold, int k) {
+	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
 	MinHashLSH index = new MinHashLSH(threshold, k);
 	// Create sketches and index
 	Map<Integer, Sketch> idToSketch = new HashMap<>();
@@ -116,20 +118,12 @@ public class OOPHLSHSimilarity {
 	    MinHashOptimal mh = (MinHashOptimal) e.getValue();
 	    Set<Object> candidates = index.query(mh);
 	    for (Object o : candidates) {
-		similarPairs.add(new Tuple<Integer, Integer>(id, (int) o));
+		if (id != (int) o) {
+		    similarPairs.add(new Pair<Integer, Integer>(id, (int) o));
+		}
 	    }
 	}
 	return similarPairs;
-    }
-
-    public class Tuple<X, Y> {
-	public final X x;
-	public final Y y;
-
-	public Tuple(X x, Y y) {
-	    this.x = x;
-	    this.y = y;
-	}
     }
 
     public static void main(String args[]) {
@@ -148,9 +142,9 @@ public class OOPHLSHSimilarity {
 	File[] filesInPath = oss.enumerateFiles(inputPath);
 	System.out.println("Found " + filesInPath.length + " files to process");
 	long start = System.currentTimeMillis();
-	List<Tuple<Integer, Integer>> output = oss.computeAllPairs(filesInPath, similarityThreshold, k);
+	Set<Pair<Integer, Integer>> output = oss.computeAllPairs(filesInPath, similarityThreshold, k);
 	long end = System.currentTimeMillis();
-	for (Tuple<Integer, Integer> pair : output) {
+	for (Pair<Integer, Integer> pair : output) {
 	    int xid = pair.x;
 	    int yid = pair.y;
 	    String xname = oss.hashIdToName.get(xid);
@@ -159,6 +153,25 @@ public class OOPHLSHSimilarity {
 	}
 	System.out.println("Total time: " + (end - start));
 	System.out.println("Total sim pairs: " + output.size());
+
+	// Write output in format x,y for all pairs
+	File f = new File(outputPath);
+	BufferedWriter bw = null;
+	try {
+	    bw = new BufferedWriter(new FileWriter(f));
+	    for (Pair<Integer, Integer> pair : output) {
+		int xid = pair.x;
+		int yid = pair.y;
+		String line = xid + "," + yid + '\n';
+		bw.write(line);
+	    }
+	    bw.flush();
+	    bw.close();
+	} catch (IOException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}
+	System.out.println("Results output to: " + outputPath);
     }
 
 }

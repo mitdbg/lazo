@@ -25,7 +25,7 @@ public class MinHash implements Sketch {
 	this.k = k;
 	this.seed = 666;
 	this.hf = SketchUtils.initializeHashFunction(HashFunctionType.MURMUR3, this.k);
-	this.hashValues = SketchUtils.initializeHashValues(k, this.maxHash);
+	this.hashValues = SketchUtils.initializeHashValues(k, Long.MAX_VALUE);
 	this.initializePermutations();
     }
 
@@ -33,7 +33,7 @@ public class MinHash implements Sketch {
 	this.k = k;
 	this.seed = seed;
 	this.hf = SketchUtils.initializeHashFunction(hashFunctionType, this.seed);
-	this.hashValues = SketchUtils.initializeHashValues(k, this.maxHash);
+	this.hashValues = SketchUtils.initializeHashValues(k, Long.MAX_VALUE);
 	this.initializePermutations();
     }
 
@@ -66,7 +66,8 @@ public class MinHash implements Sketch {
 	long hv = hc.asLong();
 
 	for (int i = 0; i < k; i++) {
-	    long kHashValue = (a[i] * hv + b[i]) % this.mersennePrime;
+	    long kHashValue = Math.floorMod((a[i] * hv + b[i]), this.mersennePrime);
+	    // long kHashValue = (a[i] * hv + b[i]) % this.mersennePrime;
 	    hashValues[i] = hashValues[i] < kHashValue ? hashValues[i] : kHashValue;
 	}
     }
