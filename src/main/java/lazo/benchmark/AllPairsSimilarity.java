@@ -20,6 +20,10 @@ import com.univocity.parsers.csv.CsvParserSettings;
 
 public class AllPairsSimilarity {
 
+    // Metrics
+    private long io_time;
+    private long compare_time;
+
     private CsvParser parser;
     private Map<Integer, String> hashIdToName;
 
@@ -51,6 +55,7 @@ public class AllPairsSimilarity {
     }
 
     public Map<Integer, Set<String>> obtainColumns(File file) {
+	long s = System.currentTimeMillis();
 	Map<Integer, Set<String>> tableSets = new HashMap<>();
 	Map<Integer, Integer> indexToHashId = new HashMap<>();
 
@@ -76,32 +81,9 @@ public class AllPairsSimilarity {
 		tableSets.get(indexToHashId.get(j)).add(row[j]);
 	    }
 	}
-
+	long e = System.currentTimeMillis();
+	this.io_time += (e - s);
 	return tableSets;
-    }
-
-    private float computeJS(Set<String> a, Set<String> b) {
-	// more efficient union and ix
-	float js = 0;
-	Set<String> smaller = null;
-	Set<String> larger = null;
-	if (a.size() >= b.size()) {
-	    smaller = b;
-	    larger = a;
-	} else {
-	    smaller = a;
-	    larger = b;
-	}
-	int hits = 0;
-	for (String s : smaller) {
-	    if (larger.contains(s)) {
-		hits += 1;
-	    }
-	}
-	int ix = hits;
-	int union = (smaller.size() + larger.size()) - ix;
-	js = ix / union;
-	return js;
     }
 
     private boolean validSet(Set<String> set) {
@@ -137,7 +119,7 @@ public class AllPairsSimilarity {
 			    continue; // avoid same keys within table
 			}
 			Set<String> b = entryB.getValue();
-			float js = computeJS(a, b);
+			float js = Utils.computeJS(a, b);
 
 			if (js >= threshold) {
 			    Pair<Integer, Integer> newPair1 = new Pair<Integer, Integer>(pivotKey, key);
@@ -175,6 +157,7 @@ public class AllPairsSimilarity {
 	    System.out.println(xname + " ~= " + yname);
 	}
 	System.out.println("Total time: " + (end - start));
+	System.out.println("IO time: " + aps.io_time);
 	System.out.println("Total sim pairs: " + output.size());
 
 	// Write output in format x,y for all pairs

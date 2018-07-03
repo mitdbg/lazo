@@ -11,6 +11,9 @@ public class LazoIndex {
 
     private final boolean ECH = true;
 
+    // metrics
+    private long ech_time;
+
     private int k;
     private float d;
     private int numIndexes;
@@ -43,6 +46,10 @@ public class LazoIndex {
 	    float threshold = d * i;
 	    this.indexes.put(i, new MinHashLSH(threshold, k));
 	}
+    }
+
+    public long get_ech_time() {
+	return this.ech_time;
     }
 
     public boolean insert(Object key, LazoSketch sketch) {
@@ -96,6 +103,7 @@ public class LazoIndex {
 	Set<LazoCandidate> candidates = new HashSet<>();
 
 	// compute estimates for each partialCandidate
+	long s = System.currentTimeMillis();
 	for (Object key : partialCandidates.keySet()) {
 	    float th = partialCandidates.get(key);
 	    float lowerThreshold = th;
@@ -173,6 +181,8 @@ public class LazoIndex {
 		candidates.add(new LazoCandidate(key, avgJs, avgJcx, avgJcy));
 	    }
 	}
+	long e = System.currentTimeMillis();
+	this.ech_time += (e - s);
 	return candidates;
     }
 

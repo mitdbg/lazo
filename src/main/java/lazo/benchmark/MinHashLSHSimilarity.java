@@ -24,8 +24,16 @@ import lazo.sketch.Sketch;
 
 public class MinHashLSHSimilarity {
 
+    // metrics
+    private long io_time;
+    private long index_time;
+    private long query_time;
+    private long post_time;
+
     private CsvParser parser;
     private Map<Integer, String> hashIdToName;
+
+    private Map<String, File> nameToFile = new HashMap<>();
 
     public MinHashLSHSimilarity() {
 	// csv parser
@@ -55,6 +63,7 @@ public class MinHashLSHSimilarity {
     }
 
     public Map<Integer, Set<String>> obtainColumns(File file) {
+	long s = System.currentTimeMillis();
 	Map<Integer, Set<String>> tableSets = new HashMap<>();
 	Map<Integer, Integer> indexToHashId = new HashMap<>();
 
@@ -80,7 +89,8 @@ public class MinHashLSHSimilarity {
 		tableSets.get(indexToHashId.get(j)).add(row[j]);
 	    }
 	}
-
+	long e = System.currentTimeMillis();
+	this.io_time += (e - s);
 	return tableSets;
     }
 
@@ -95,6 +105,7 @@ public class MinHashLSHSimilarity {
 	    // Read file
 	    Map<Integer, Set<String>> table = obtainColumns(files[i]);
 	    // Compute mh and insert to index
+	    long s = System.currentTimeMillis();
 	    for (Entry<Integer, Set<String>> e : table.entrySet()) {
 		int id = e.getKey();
 		MinHash mh = new MinHash(k);
@@ -111,8 +122,11 @@ public class MinHashLSHSimilarity {
 		    idToSketch.put(id, mh);
 		}
 	    }
+	    long e = System.currentTimeMillis();
+	    this.index_time += (e - s);
 	}
 	// Query to retrieve pairs
+	long s = System.currentTimeMillis();
 	for (Entry<Integer, Sketch> e : idToSketch.entrySet()) {
 	    int id = e.getKey();
 	    MinHash mh = (MinHash) e.getValue();
@@ -123,7 +137,39 @@ public class MinHashLSHSimilarity {
 		}
 	    }
 	}
+	long e = System.currentTimeMillis();
+	this.query_time += (e - s);
 	return similarPairs;
+    }
+
+    private Map<Integer, Set<String>> getTable(String table, Map<String, Map<Integer, Set<String>>> cache) {
+	if (cache.containsKey(table)) {
+	    return cache.get(table);
+	}
+	File f = this.nameToFile.get(table);
+	Map<Integer, Set<String>> cols = this.obtainColumns(f);
+	cache.put(table, cols);
+	return cols;
+    }
+
+    public Set<Pair<Integer, Integer>> postProcessing(Set<Pair<Integer, Integer>> candidates, float threshold) {
+	Set<Pair<Integer, Integer>> verifiedPairs = new HashSet<>();
+	Map<String, Map<Integer, Set<String>>> cache = new HashMap<>();
+	for (Pair<Integer, Integer> candidate : candidates) {
+	    String fullName1 = this.hashIdToName.get(candidate.x);
+	    String tokens1[] = fullName1.split("->");
+	    String tableName1 = tokens1[0];
+	    Map<Integer, Set<String>> tableX = this.getTable(tableName1, cache);
+	    String fullName2 = this.hashIdToName.get(candidate.y);
+	    String tokens2[] = fullName2.split("->");
+	    String tableName2 = tokens2[0];
+	    Map<Integer, Set<String>> tableY = this.getTable(tableName2, cache);
+	    float realJS = Utils.computeJS(tableX.get(candidate.x), tableY.get(candidate.y));
+	    if (realJS >= threshold) {
+		verifiedPairs.add(candidate);
+	    }
+	}
+	return verifiedPairs;
     }
 
     public static void main(String args[]) {
@@ -140,11 +186,20 @@ public class MinHashLSHSimilarity {
 	int k = Integer.parseInt(args[3]);
 
 	File[] filesInPath = mls.enumerateFiles(inputPath);
+	for (File f : filesInPath) {
+	    mls.nameToFile.put(f.getName(), f);
+	}
 	System.out.println("Found " + filesInPath.length + " files to process");
 	long start = System.currentTimeMillis();
 	Set<Pair<Integer, Integer>> output = mls.computeAllPairs(filesInPath, similarityThreshold, k);
+
+	long s = System.currentTimeMillis();
+	Set<Pair<Integer, Integer>> cleanOutput = mls.postProcessing(output, similarityThreshold);
+	long e = System.currentTimeMillis();
+	mls.post_time = (e - s);
+
 	long end = System.currentTimeMillis();
-	for (Pair<Integer, Integer> pair : output) {
+	for (Pair<Integer, Integer> pair : cleanOutput) {
 	    int xid = pair.x;
 	    int yid = pair.y;
 	    String xname = mls.hashIdToName.get(xid);
@@ -152,7 +207,12 @@ public class MinHashLSHSimilarity {
 	    System.out.println(xname + " ~= " + yname);
 	}
 	System.out.println("Total time: " + (end - start));
-	System.out.println("Total sim pairs: " + output.size());
+	System.out.println("io time: " + (mls.io_time));
+	System.out.println("index time: " + (mls.index_time));
+	System.out.println("query time: " + (mls.query_time));
+	System.out.println("post time: " + (mls.post_time));
+	System.out.println("Total sim candidates: " + output.size());
+	System.out.println("Total sim pairs: " + cleanOutput.size());
 
 	// Write output in format x,y for all pairs
 	File f = new File(outputPath);
@@ -160,7 +220,7 @@ public class MinHashLSHSimilarity {
 	try {
 	    bw = new BufferedWriter(new FileWriter(f));
 	    int repeated_pair = 0;
-	    for (Pair<Integer, Integer> pair : output) {
+	    for (Pair<Integer, Integer> pair : cleanOutput) {
 		int xid = pair.x;
 		int yid = pair.y;
 		if (xid == yid) {
@@ -172,9 +232,9 @@ public class MinHashLSHSimilarity {
 	    System.out.println("Repeated pairs: " + repeated_pair);
 	    bw.flush();
 	    bw.close();
-	} catch (IOException e) {
+	} catch (IOException ioe) {
 	    // TODO Auto-generated catch block
-	    e.printStackTrace();
+	    ioe.printStackTrace();
 	}
 	System.out.println("Results output to: " + outputPath);
     }

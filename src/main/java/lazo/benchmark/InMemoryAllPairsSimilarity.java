@@ -19,6 +19,10 @@ import com.univocity.parsers.csv.CsvParserSettings;
 
 public class InMemoryAllPairsSimilarity {
 
+    // Metrics
+    private long io_time;
+    private long compare_time;
+
     private CsvParser parser;
     private Map<Integer, String> hashIdToName;
 
@@ -50,6 +54,7 @@ public class InMemoryAllPairsSimilarity {
     }
 
     public Map<Integer, Set<String>> obtainColumns(File[] files) {
+	long s = System.currentTimeMillis();
 	Map<Integer, Set<String>> tableSets = new HashMap<>();
 
 	for (int i = 0; i < files.length; i++) {
@@ -60,6 +65,9 @@ public class InMemoryAllPairsSimilarity {
 		allRows = parser.parseAll(getReader(file));
 	    } catch (FileNotFoundException e) {
 		e.printStackTrace();
+	    } catch (Exception ex) {
+		System.out.println("File that caused exception: " + files[i].getAbsolutePath());
+		ex.printStackTrace();
 	    }
 	    String[] header = allRows.get(0);
 	    int idx = 0;
@@ -78,32 +86,9 @@ public class InMemoryAllPairsSimilarity {
 		}
 	    }
 	}
-
+	long e = System.currentTimeMillis();
+	this.io_time = (e - s);
 	return tableSets;
-    }
-
-    private float computeJS(Set<String> a, Set<String> b) {
-	// more efficient union and ix
-	float js = 0;
-	Set<String> smaller = null;
-	Set<String> larger = null;
-	if (a.size() >= b.size()) {
-	    smaller = b;
-	    larger = a;
-	} else {
-	    smaller = a;
-	    larger = b;
-	}
-	int hits = 0;
-	for (String s : smaller) {
-	    if (larger.contains(s)) {
-		hits += 1;
-	    }
-	}
-	int ix = hits;
-	int union = (smaller.size() + larger.size()) - ix;
-	js = ix / union;
-	return js;
     }
 
     private boolean validSet(Set<String> set) {
@@ -122,6 +107,7 @@ public class InMemoryAllPairsSimilarity {
 	// Read all columns first
 	Map<Integer, Set<String>> allColumns = obtainColumns(files);
 
+	long s = System.currentTimeMillis();
 	Object[] colIds = allColumns.keySet().toArray();
 	// All-pairs with columns in-memory -> avoid repeated IO cost
 	for (int i = 0; i < colIds.length; i++) {
@@ -134,12 +120,14 @@ public class InMemoryAllPairsSimilarity {
 	    for (int j = (i + 1); j < colIds.length; j++) {
 		int bKey = (Integer) colIds[j];
 		Set<String> b = allColumns.get(bKey);
-		float js = computeJS(a, b);
+		float js = Utils.computeJS(a, b);
 		if (js >= threshold) {
 		    similarPairs.add(new Pair<Integer, Integer>(aKey, bKey));
 		}
 	    }
 	}
+	long e = System.currentTimeMillis();
+	this.compare_time = (e - s);
 	return similarPairs;
     }
 
@@ -168,6 +156,8 @@ public class InMemoryAllPairsSimilarity {
 	    System.out.println(xname + " ~= " + yname);
 	}
 	System.out.println("Total time: " + (end - start));
+	System.out.println("IO time: " + aps.io_time);
+	System.out.println("Comp time: " + aps.compare_time);
 	System.out.println("Total sim pairs: " + output.size());
 
 	// Write output in format x,y for all pairs
