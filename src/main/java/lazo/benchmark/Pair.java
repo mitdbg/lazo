@@ -18,12 +18,12 @@ public class Pair<X, Y> {
 	int a = 0;
 	int b = 0;
 	// Sort, a is the smaller, b is the larger
-	if ((int) this.x < (int) this.y) {
-	    a = (int) this.x;
-	    b = (int) this.y;
+	if ((Integer) this.x < (Integer) this.y) {
+	    a = (Integer) this.x;
+	    b = (Integer) this.y;
 	} else {
-	    a = (int) this.y;
-	    b = (int) this.x;
+	    a = (Integer) this.y;
+	    b = (Integer) this.x;
 	}
 	// Cantor pairing function
 	// https://en.wikipedia.org/wiki/Pairing_function

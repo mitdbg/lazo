@@ -2,7 +2,7 @@
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'eclipse'
-//apply plugin: 'idea'
+mainClassName = "lazo.benchmark.LazoBenchmark"
 
 version = '0.0.1'
 

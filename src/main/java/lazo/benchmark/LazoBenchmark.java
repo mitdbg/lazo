@@ -180,7 +180,7 @@ public class LazoBenchmark {
 
 	LazoBenchmark mls = new LazoBenchmark();
 
-	if (args.length < 3) {
+	if (args.length < 4) {
 	    System.out.println("Usage: <inputPath> <outputPath> <similarityThreshold> <minhash-permutations>");
 	}
 
