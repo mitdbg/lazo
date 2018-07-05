@@ -33,6 +33,10 @@ public class LazoBenchmark {
     private long query_time;
     private long ech_time;
     private long post_time;
+    private int corrections;
+    private float magChange;
+    private int js_impact_corrections;
+    private int jcx_impact_corrections;
 
     private CsvParser parser;
     private Map<Integer, String> hashIdToName;
@@ -166,7 +170,7 @@ public class LazoBenchmark {
 	    long s = System.currentTimeMillis();
 	    for (Entry<Integer, Set<String>> e : table.entrySet()) {
 		int id = e.getKey();
-		LazoSketch ls = new LazoSketch(k, SketchType.MINHASH);
+		LazoSketch ls = new LazoSketch(k, SketchType.MINHASH_OPTIMAL);
 		Set<String> values = e.getValue();
 		boolean valid = false;
 		for (String value : values) {
@@ -198,6 +202,10 @@ public class LazoBenchmark {
 	long e = System.currentTimeMillis();
 	this.query_time = (e - s);
 	this.ech_time = index.get_ech_time();
+	this.corrections = index.corrections;
+	this.magChange = index.magnitude_correction;
+	this.js_impact_corrections = index.js_impactful_corrections;
+	this.jcx_impact_corrections = index.jcx_impactful_corrections;
 	return similarPairs;
     }
 
@@ -245,6 +253,10 @@ public class LazoBenchmark {
 	System.out.println("post time: " + mls.post_time);
 	System.out.println("Total sim candidates: " + output.size());
 	System.out.println("Total sim pairs: " + cleanOutput.size());
+	System.out.println("#corrections: " + mls.corrections);
+	System.out.println("#js_impact_corrections: " + mls.js_impact_corrections);
+	System.out.println("#jcx_impact_corrections: " + mls.jcx_impact_corrections);
+	System.out.println("#magChange: " + mls.magChange);
 
 	// Write output in format x,y for all pairs
 	File f = new File(outputPath);

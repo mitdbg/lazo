@@ -111,10 +111,14 @@ public class MinHashLSHSimilarity {
 		MinHash mh = new MinHash(k);
 		Set<String> values = e.getValue();
 		boolean valid = false;
-		for (String value : values) {
-		    if (value != null) {
-			mh.update(value);
-			valid = true;
+		int count = 0;
+		while (count < 6) {
+		    count++;
+		    for (String value : values) {
+			if (value != null) {
+			    mh.update(value);
+			    valid = true;
+			}
 		    }
 		}
 		if (valid) {

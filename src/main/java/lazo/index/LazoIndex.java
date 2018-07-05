@@ -13,6 +13,10 @@ public class LazoIndex {
 
     // metrics
     private long ech_time;
+    public int corrections;
+    public int js_impactful_corrections;
+    public int jcx_impactful_corrections;
+    public float magnitude_correction;
 
     private int k;
     private float d;
@@ -143,34 +147,79 @@ public class LazoIndex {
 		}
 		continue;
 	    }
-
+	    boolean corrected = false;
+	    float originalJSUpper = -1;
+	    float originalJCXUpper = -1;
+	    float originalJSLower = -1;
+	    float originalJCXLower = -1;
 	    if (estJCXUpper > jcxMaxBound && jcxMaxBound > 0) {
+		corrected = true;
 		long correctedAlpha = this.correctEstimate(minCardinality, queryCardinality, jcxMaxBound);
+		originalJSUpper = estJSUpper;
 		estJSUpper = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
 		estJCYUpper = candidateCardinality > 0
 			? (float) (minCardinality - correctedAlpha) / (float) candidateCardinality : 0F;
+		originalJCXUpper = estJCXUpper;
 		estJCXUpper = jcxMaxBound;
 	    } else if (estJCYUpper > jcyMaxBound && jcyMaxBound > 0) {
+		corrected = true;
 		long correctedAlpha = this.correctEstimate(minCardinality, candidateCardinality, jcyMaxBound);
+		originalJSUpper = estJSUpper;
 		estJSUpper = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
+		float magnitudeChange = Math.abs(estJSUpper - originalJSUpper);
+		this.magnitude_correction += magnitudeChange;
+		originalJCXUpper = estJCXUpper;
 		estJCXUpper = queryCardinality > 0
 			? (float) (minCardinality - correctedAlpha) / (float) queryCardinality : 0F;
 		estJCYUpper = jcyMaxBound;
 	    }
 
 	    if (estJCXLower > jcxMaxBound && jcxMaxBound > 0) {
+		corrected = true;
 		long correctedAlpha = this.correctEstimate(minCardinality, queryCardinality, jcxMaxBound);
+		originalJSLower = estJSLower;
 		estJSLower = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
+		float magnitudeChange = Math.abs(estJSLower - originalJSLower);
+		this.magnitude_correction += magnitudeChange;
 		estJCYLower = candidateCardinality > 0
 			? (float) (minCardinality - correctedAlpha) / (float) candidateCardinality : 0F;
+		originalJCXLower = estJCXLower;
 		estJCXLower = jcxMaxBound;
 
 	    } else if (estJCYLower > jcyMaxBound && jcyMaxBound > 0) {
+		corrected = true;
 		long correctedAlpha = this.correctEstimate(minCardinality, candidateCardinality, jcyMaxBound);
+		originalJSLower = estJSLower;
 		estJSLower = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
+		float magnitudeChange = Math.abs(estJSLower - originalJSLower);
+		this.magnitude_correction += magnitudeChange;
+		originalJCXLower = estJCXLower;
 		estJCXLower = queryCardinality > 0
 			? (float) (minCardinality - correctedAlpha) / (float) queryCardinality : 0F;
 		estJCYLower = jcyMaxBound;
+	    }
+	    if (corrected) {
+		corrections++;
+		if (originalJSUpper <= js_threshold && estJSUpper > js_threshold) {
+		    this.js_impactful_corrections++;
+		}
+		if (originalJSUpper > js_threshold && estJSUpper <= js_threshold) {
+		    this.js_impactful_corrections++;
+		}
+		if (originalJCXUpper <= jcx_threshold && estJCXUpper > jcx_threshold) {
+		    this.jcx_impactful_corrections++;
+		}
+		if (originalJCXUpper > jcx_threshold && estJCXUpper <= jcx_threshold) {
+		    this.jcx_impactful_corrections++;
+		}
+		if (originalJCXLower <= jcx_threshold && estJCXLower > jcx_threshold) {
+		    this.jcx_impactful_corrections++;
+		}
+		if (originalJCXLower > jcx_threshold && estJCXLower <= jcx_threshold) {
+		    this.jcx_impactful_corrections++;
+		}
+		float magnitudeChange = Math.abs(estJSUpper - originalJSUpper);
+		this.magnitude_correction += magnitudeChange;
 	    }
 	    float avgJs = (estJSLower + estJSUpper) / 2;
 	    float avgJcx = (estJCXLower + estJCXUpper) / 2;
