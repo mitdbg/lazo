@@ -20,6 +20,7 @@ import com.univocity.parsers.csv.CsvParserSettings;
 
 import lazo.index.LazoIndex;
 import lazo.index.LazoIndex.LazoCandidate;
+import lazo.sketch.HashFunctionType;
 import lazo.sketch.LazoSketch;
 import lazo.sketch.Sketch;
 import lazo.sketch.SketchType;
@@ -145,7 +146,7 @@ public class LazoBenchmark {
 	    long s = System.currentTimeMillis();
 	    for (Entry<Integer, Set<String>> e : table.entrySet()) {
 		int id = e.getKey();
-		LazoSketch ls = new LazoSketch(k, SketchType.MINHASH_OPTIMAL);
+		LazoSketch ls = new LazoSketch(k, SketchType.MINHASH, HashFunctionType.MURMUR3);
 		Set<String> values = e.getValue();
 		boolean valid = false;
 		for (String value : values) {
@@ -208,11 +209,12 @@ public class LazoBenchmark {
 	long end = System.currentTimeMillis();
 
 	long s = System.currentTimeMillis();
-	Set<Pair<Integer, Integer>> cleanOutput = mls.postProcessing(output, similarityThreshold);
+	// Set<Pair<Integer, Integer>> cleanOutput = mls.postProcessing(output,
+	// similarityThreshold);
 	long e = System.currentTimeMillis();
 	mls.post_time = (e - s);
 
-	for (Pair<Integer, Integer> pair : cleanOutput) {
+	for (Pair<Integer, Integer> pair : output) {
 	    int xid = pair.x;
 	    int yid = pair.y;
 	    String xname = mls.hashIdToName.get(xid);
@@ -226,7 +228,7 @@ public class LazoBenchmark {
 	System.out.println("ech time (part of query time): " + (mls.ech_time));
 	System.out.println("post time: " + mls.post_time);
 	System.out.println("Total sim candidates: " + output.size());
-	System.out.println("Total sim pairs: " + cleanOutput.size());
+	// System.out.println("Total sim pairs: " + cleanOutput.size());
 	System.out.println("#corrections: " + mls.corrections);
 	System.out.println("#js_impact_corrections: " + mls.js_impact_corrections);
 	System.out.println("#jcx_impact_corrections: " + mls.jcx_impact_corrections);
@@ -237,7 +239,7 @@ public class LazoBenchmark {
 	BufferedWriter bw = null;
 	try {
 	    bw = new BufferedWriter(new FileWriter(f));
-	    for (Pair<Integer, Integer> pair : cleanOutput) {
+	    for (Pair<Integer, Integer> pair : output) {
 		int xid = pair.x;
 		int yid = pair.y;
 		String line = xid + "," + yid + '\n';

@@ -14,6 +14,24 @@ public class LazoSketch implements Sketch {
     private Sketch underlyingSketch;
     private ICardinality ic;
 
+    public LazoSketch(int k, SketchType sketchType, HashFunctionType hft) {
+	this.k = k;
+	this.seed = 666;
+	this.hf = SketchUtils.initializeHashFunction(hft, this.k);
+	switch (sketchType) {
+	case MINHASH:
+	    this.underlyingSketch = new MinHash(k);
+	    break;
+	case MINHASH_OPTIMAL:
+	    this.underlyingSketch = new MinHashOptimal(k);
+	    break;
+	default:
+	    System.out.println("Sketch type unrecognized");
+	}
+	// Cardinality estimator here
+	ic = new HyperLogLogPlus(18, 25);
+    }
+
     public LazoSketch(int k, SketchType sketchType) {
 	this.k = k;
 	this.seed = 666;

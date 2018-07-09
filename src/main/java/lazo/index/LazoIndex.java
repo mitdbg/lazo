@@ -155,6 +155,10 @@ public class LazoIndex {
 	    if (estJCXUpper > jcxMaxBound && jcxMaxBound > 0) {
 		corrected = true;
 		long correctedAlpha = this.correctEstimate(minCardinality, queryCardinality, jcxMaxBound);
+		if (correctedAlpha != 0) {
+		    int b = 0;
+		    b += 1;
+		}
 		originalJSUpper = estJSUpper;
 		estJSUpper = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
 		estJCYUpper = candidateCardinality > 0
@@ -164,6 +168,10 @@ public class LazoIndex {
 	    } else if (estJCYUpper > jcyMaxBound && jcyMaxBound > 0) {
 		corrected = true;
 		long correctedAlpha = this.correctEstimate(minCardinality, candidateCardinality, jcyMaxBound);
+		if (correctedAlpha != 0) {
+		    int b = 0;
+		    b += 1;
+		}
 		originalJSUpper = estJSUpper;
 		estJSUpper = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
 		float magnitudeChange = Math.abs(estJSUpper - originalJSUpper);
@@ -177,6 +185,10 @@ public class LazoIndex {
 	    if (estJCXLower > jcxMaxBound && jcxMaxBound > 0) {
 		corrected = true;
 		long correctedAlpha = this.correctEstimate(minCardinality, queryCardinality, jcxMaxBound);
+		if (correctedAlpha != 0) {
+		    int b = 0;
+		    b += 1;
+		}
 		originalJSLower = estJSLower;
 		estJSLower = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
 		float magnitudeChange = Math.abs(estJSLower - originalJSLower);
@@ -189,6 +201,10 @@ public class LazoIndex {
 	    } else if (estJCYLower > jcyMaxBound && jcyMaxBound > 0) {
 		corrected = true;
 		long correctedAlpha = this.correctEstimate(minCardinality, candidateCardinality, jcyMaxBound);
+		if (correctedAlpha != 0) {
+		    int b = 0;
+		    b += 1;
+		}
 		originalJSLower = estJSLower;
 		estJSLower = (float) (minCardinality - correctedAlpha) / (float) (maxCardinality + correctedAlpha);
 		float magnitudeChange = Math.abs(estJSLower - originalJSLower);
@@ -249,6 +265,7 @@ public class LazoIndex {
     }
 
     private long correctEstimate(long minCardinality, long sketchCardinality, float jcBound) {
-	return (long) (minCardinality - (jcBound * sketchCardinality));
+	long newAlpha = (long) (minCardinality - (jcBound * sketchCardinality));
+	return newAlpha;
     }
 }

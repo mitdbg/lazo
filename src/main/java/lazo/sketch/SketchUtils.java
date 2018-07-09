@@ -27,7 +27,7 @@ public class SketchUtils {
 	case MURMUR3:
 	    hf = Hashing.murmur3_32(seed);
 	case SHA1:
-	    hf = Hashing.sha256();
+	    hf = Hashing.sha1();
 	default:
 	    // TODO error
 	    break;

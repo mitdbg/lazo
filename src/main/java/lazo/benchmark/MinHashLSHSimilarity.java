@@ -24,6 +24,8 @@ import lazo.sketch.Sketch;
 
 public class MinHashLSHSimilarity {
 
+    private final int COMP_FACTOR = 1;
+
     // metrics
     private long io_time;
     private long index_time;
@@ -112,7 +114,7 @@ public class MinHashLSHSimilarity {
 		Set<String> values = e.getValue();
 		boolean valid = false;
 		int count = 0;
-		while (count < 6) {
+		while (count < COMP_FACTOR) {
 		    count++;
 		    for (String value : values) {
 			if (value != null) {
