@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -70,6 +71,9 @@ public class LazoBenchmark {
 	return br;
     }
 
+    int failed = 0;
+    List<String> failedFiles = new ArrayList<>();
+
     public Map<Integer, Set<String>> obtainColumns(File file) {
 	long s = System.currentTimeMillis();
 	Map<Integer, Set<String>> tableSets = new HashMap<>();
@@ -78,9 +82,19 @@ public class LazoBenchmark {
 	List<String[]> allRows = null;
 	try {
 	    allRows = parser.parseAll(getReader(file));
-	} catch (FileNotFoundException e) {
-	    e.printStackTrace();
+//System.out.println(allRows);
+	} 
+        //catch (FileNotFoundException e) {
+	//    e.printStackTrace();
+	//} 
+	catch (Exception ex) {
+	    String absPath = file.getAbsolutePath();
+ 	    failedFiles.add(absPath);
+            this.failed += 1;
+            ex.printStackTrace();
+            return null;
 	}
+	try{
 	String[] header = allRows.get(0);
 	int idx = 0;
 	for (String columnName : header) {
@@ -96,6 +110,14 @@ public class LazoBenchmark {
 		// add value to correct column
 		tableSets.get(indexToHashId.get(j)).add(row[j]);
 	    }
+	}
+	}
+	catch(Exception npe) {
+	    String absPath = file.getAbsolutePath();
+ 	    failedFiles.add(absPath);
+            this.failed += 1;
+            npe.printStackTrace();
+            return null;
 	}
 	long e = System.currentTimeMillis();
 	this.io_time += (e - s);
@@ -142,6 +164,9 @@ public class LazoBenchmark {
 	    System.out.println(files[i].getAbsolutePath());
 	    // Read file
 	    Map<Integer, Set<String>> table = obtainColumns(files[i]);
+            if (table == null) {
+		continue; // table is broken
+	    }
 	    // Compute mh and insert to index
 	    long s = System.currentTimeMillis();
 	    for (Entry<Integer, Set<String>> e : table.entrySet()) {
@@ -222,6 +247,7 @@ public class LazoBenchmark {
 	    System.out.println(xname + " ~= " + yname);
 	}
 	System.out.println("Total time: " + (end - start));
+ 	System.out.println("Total failed tasks: " + mls.failed);
 	System.out.println("io time: " + (mls.io_time));
 	System.out.println("index time: " + (mls.index_time));
 	System.out.println("query time: " + (mls.query_time));
@@ -252,6 +278,22 @@ public class LazoBenchmark {
 	    eio.printStackTrace();
 	}
 	System.out.println("Results output to: " + outputPath);
+
+	File f1 = new File(outputPath + ".ERRORS.TXT");
+	BufferedWriter bw1 = null;
+	try {
+	    bw1 = new BufferedWriter(new FileWriter(f1));
+	    for (String line : mls.failedFiles) {
+		bw1.write(line + '\n');
+	    }
+	    bw1.flush();
+	    bw1.close();
+	} catch (IOException eio) {
+	    // TODO Auto-generated catch block
+	    eio.printStackTrace();
+	}
+	System.out.println("ERRORS file output to: " + outputPath + ".ERRORS.TXT");
+
     }
 
 }
