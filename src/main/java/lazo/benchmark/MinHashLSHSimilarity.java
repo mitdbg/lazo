@@ -99,6 +99,7 @@ public class MinHashLSHSimilarity {
     public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float threshold, int k) {
 	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
 	MinHashLSH index = new MinHashLSH(threshold, k);
+	int totalColumns = 0;
 	// Create sketches and index
 	Map<Integer, Sketch> idToSketch = new HashMap<>();
 	for (int i = 0; i < files.length; i++) {
@@ -111,6 +112,7 @@ public class MinHashLSHSimilarity {
 	    for (Entry<Integer, Set<String>> e : table.entrySet()) {
 		int id = e.getKey();
 		MinHash mh = new MinHash(k);
+		totalColumns++;
 		Set<String> values = e.getValue();
 		boolean valid = false;
 		int count = 0;
@@ -131,6 +133,7 @@ public class MinHashLSHSimilarity {
 	    long e = System.currentTimeMillis();
 	    this.index_time += (e - s);
 	}
+	System.out.println("Total Columns: " + totalColumns);
 	// Query to retrieve pairs
 	long s = System.currentTimeMillis();
 	for (Entry<Integer, Sketch> e : idToSketch.entrySet()) {

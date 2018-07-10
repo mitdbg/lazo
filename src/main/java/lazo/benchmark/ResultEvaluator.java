@@ -50,6 +50,7 @@ public class ResultEvaluator {
 	}
 	double precision = (double) (correct / pairs2.size());
 	double recall = (double) (correct / pairs1.size());
+	System.out.println("Ground truth has: " + pairs1.size());
 	System.out.println("P/R: " + precision + "/" + recall);
     }
 }

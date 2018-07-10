@@ -1,16 +1,13 @@
 package lazo.index;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import lazo.sketch.LazoSketch;
 
-public class LazoIndex {
+public class LazoIndexBase {
 
     private final boolean ECH = true;
 
@@ -23,163 +20,48 @@ public class LazoIndex {
 
     private int k;
     private float d;
-    private float fp_rate;
-    private float fn_rate;
-    private int numThresholds;
-
-    private int gcdSliceSize;
-    private int gcdBands;
-    private List<Map<Long, Set<Object>>> hashTables;
-    private int[] hashRanges;
-    @Deprecated
+    private int numIndexes;
     private Map<Integer, MinHashLSH> indexes;
     private Map<Object, Long> keyCardinality;
 
-    // threshold - (b,r)
-    private Map<Integer, Integer[]> thresholdToBandsRows = new HashMap<>();
-
-    // integration precision
-    private float IP = 0.001f;
-
-    public LazoIndex(int k, float d) {
+    public LazoIndexBase(int k, float d) {
 	this.k = k;
 	this.d = d;
-	this.fp_rate = 0.5f;
-	this.fn_rate = 0.5f;
 
-	this.initIndex(this.k, this.d, this.fp_rate, this.fn_rate);
-    }
-
-    public LazoIndex(int k) {
-	this.k = k;
-	this.d = 0.05f; // default for 20 indexes
-	this.fp_rate = 0.5f;
-	this.fn_rate = 0.5f;
-
-	this.initIndex(this.k, this.d, this.fp_rate, this.fn_rate);
-    }
-
-    private void initIndex(int k, float d, float fp_rate, float fn_rate) {
 	this.keyCardinality = new HashMap<>();
 
-	this.numThresholds = (int) (1 / d);
-
-	Set<Integer> rowCombinations = new HashSet<>();
-
-	// associate threshold to b,r combination and keep rows to compute
-	// bin-options
-	for (int i = 0; i < this.numThresholds; i++) {
+	this.numIndexes = (int) (1 / d);
+	this.indexes = new HashMap<>();
+	for (int i = 0; i < this.numIndexes; i++) {
 	    float threshold = d * i;
-	    Integer[] bandsAndRows = this.computeOptimalParameters(threshold, k, fp_rate, fn_rate);
-	    this.thresholdToBandsRows.put(i, bandsAndRows);
-	    int rows = bandsAndRows[1];
-	    rowCombinations.add(rows);
+	    this.indexes.put(i, new MinHashLSH(threshold, k));
 	}
-	// compute bin-options
-	int gcdSliceSize = findGCDOf(rowCombinations.toArray(new Integer[rowCombinations.size()]));
-	int gcdBands = this.k / gcdSliceSize;
-	this.gcdSliceSize = gcdSliceSize;
-	this.gcdBands = gcdBands;
-	this.hashTables = new ArrayList<>();
-	this.hashRanges = new int[gcdBands];
-	// hash tables
-	for (int i = 0; i < gcdBands; i++) {
-	    Map<Long, Set<Object>> mp = new HashMap<>();
-	    hashTables.add(mp);
-	}
-	// hash ranges
-	for (int i = 0; i < hashRanges.length; i++) {
-	    hashRanges[i] = i * gcdSliceSize;
-	}
-
     }
 
-    private int gcd(int x, int y) {
-	// Euclid's algo
-	return (y == 0) ? x : gcd(y, x % y);
-    }
+    public LazoIndexBase(int k) {
+	this.k = k;
+	this.d = 0.05f; // default for 20 indexes
 
-    private int findGCDOf(Integer... numbers) {
-	return Arrays.stream(numbers).reduce(0, (x, y) -> gcd(x, y));
-    }
+	this.keyCardinality = new HashMap<>();
 
-    private float computeFalsePositiveProbability(float threshold, int bands, int rows) {
-	float start = 0.0f;
-	float end = threshold;
-	float area = 0.0f;
-	float x = start;
-	while (x < end) {
-	    area += 1 - Math.pow((1 - Math.pow(x + 0.5 * IP, rows)), bands) * IP;
-	    x = x + IP;
+	this.numIndexes = (int) (1 / d);
+	this.indexes = new HashMap<>();
+	for (int i = 0; i < this.numIndexes; i++) {
+	    float threshold = d * i;
+	    this.indexes.put(i, new MinHashLSH(threshold, k));
 	}
-	return (float) area;
-
-    }
-
-    private float computeFalseNegativeProbability(float threshold, int bands, int rows) {
-	float start = threshold;
-	float end = 1.0f;
-	float area = 0.0f;
-	float x = start;
-	while (x < end) {
-	    area += 1 - (1 - Math.pow((1 - Math.pow(x + 0.5 * IP, rows)), bands) * IP);
-	    x = x + IP;
-	}
-	return (float) area;
-    }
-
-    private Integer[] computeOptimalParameters(float threshold, int k, float fp_rate, float fn_rate) {
-	float minError = Float.MAX_VALUE;
-	int optimalBands = 0;
-	int optimalRows = 0;
-
-	int maximumRows = 0;
-	for (int band = 1; band < k + 1; band++) {
-	    maximumRows = (int) (k / band);
-	    for (int rows = 1; rows < maximumRows + 1; rows++) {
-		float falsePositives = this.computeFalsePositiveProbability(threshold, band, rows);
-		float falseNegatives = this.computeFalseNegativeProbability(threshold, band, rows);
-		float error = fp_rate * falsePositives + fn_rate * falseNegatives;
-		if (error < minError) {
-		    minError = error;
-		    optimalBands = band;
-		    optimalRows = rows;
-		}
-	    }
-	}
-	return new Integer[] { optimalBands, optimalRows };
     }
 
     public long get_ech_time() {
 	return this.ech_time;
     }
 
-    private long segmentHash(long[] segment) {
-	return Arrays.hashCode(segment);
-    }
-
     public boolean insert(Object key, LazoSketch sketch) {
-	// Store cardinality of key
+	for (MinHashLSH lshIndex : indexes.values()) {
+	    lshIndex.insert(key, sketch);
+	}
 	keyCardinality.put(key, sketch.getCardinality());
-	// Obtain segments of this sketch
-	List<long[]> segments = new ArrayList<>();
-	for (int start : this.hashRanges) {
-	    int end = start + this.gcdSliceSize;
-	    long[] segment = Arrays.copyOfRange(sketch.getHashValues(), start, end);
-	    segments.add(segment);
-	}
-	// Insert key in the hashmap handling each band
-	for (int i = 0; i < this.gcdBands; i++) {
-	    long[] sg = segments.get(i);
-	    Map<Long, Set<Object>> hashTable = hashTables.get(i);
-	    long segId = segmentHash(sg);
-	    if (hashTable.get(segId) == null) {
-		Set<Object> l = new HashSet<>();
-		hashTable.put(segId, l);
-	    }
-	    hashTable.get(segId).add(key);
-	}
-	return true;
+	return false;
     }
 
     public class LazoCandidate {
@@ -204,71 +86,16 @@ public class LazoIndex {
 	return this.query(sketch, 0, jcx_threshold);
     }
 
-    private Set<Object> setIX(Set<Object> a, Set<Object> b) {
-	Set<Object> ix = new HashSet<>();
-	Set<Object> smaller = null;
-	Set<Object> larger = null;
-	if (a.size() >= b.size()) {
-	    smaller = b;
-	    larger = a;
-	} else {
-	    smaller = a;
-	    larger = b;
-	}
-	for (Object s : smaller) {
-	    if (larger.contains(s)) {
-		ix.add(s);
-	    }
-	}
-	return ix;
-    }
-
-    public Set<Object> querySlice(LazoSketch sketch, int bands, int rows) {
-	Set<Object> candidates = new HashSet<>();
-	// ix on rows, un on bands
-	for (int b = 0; b < bands; b++) {
-	    int gcdFactorsPerRows = rows / this.gcdSliceSize;
-	    Set<Object> bandCandidates = new HashSet<>();
-	    for (int i = 0; i < gcdFactorsPerRows; i++) {
-		int start = this.hashRanges[(b * this.gcdSliceSize) + i];
-		int end = (this.hashRanges[(b * this.gcdSliceSize) + i] + 1) * this.gcdSliceSize;
-		long[] segment = Arrays.copyOfRange(sketch.getHashValues(), start, end);
-		long segId = segmentHash(segment);
-
-		Map<Long, Set<Object>> hashTable = this.hashTables.get(i);
-		if (hashTable.containsKey(segId)) {
-		    Set<Object> queryResult = hashTable.get(segId);
-		    if (bandCandidates.size() == 0) {
-			bandCandidates.addAll(queryResult);
-		    } else {
-			bandCandidates = setIX(bandCandidates, queryResult);
-			if (bandCandidates.size() == 0) {
-			    break; // no candidates in this band
-			}
-		    }
-		} else {
-		    break; // key does not even exist
-		}
-	    }
-	    // We now union bandCandidates with candidates
-	    candidates.addAll(bandCandidates);
-	}
-	return candidates;
-    }
-
     public Set<LazoCandidate> query(LazoSketch sketch, float js_threshold, float jcx_threshold) {
 
 	// Get all candidates
+	// TODO: is it necessary to pre-materialize this?
 	Map<Object, Float> partialCandidates = new HashMap<>();
 	Set<Object> seenCandidates = new HashSet<>();
-
-	for (int i = 0; i < this.numThresholds; i++) {
-	    int key_threshold = this.numThresholds - i - 1;
+	for (int i = 0; i < this.numIndexes; i++) {
+	    int key_threshold = this.numIndexes - i - 1;
 	    float queryingThreshold = key_threshold * this.d;
-	    Integer[] bandsAndRows = thresholdToBandsRows.get(key_threshold);
-	    int bands = bandsAndRows[0];
-	    int rows = bandsAndRows[1];
-	    Set<Object> thresholdCandidates = this.querySlice(sketch, bands, rows);
+	    Set<Object> thresholdCandidates = indexes.get(key_threshold).query(sketch.getSketch());
 	    for (Object pCandidate : thresholdCandidates) {
 		if (!seenCandidates.contains(pCandidate)) {
 		    partialCandidates.put(pCandidate, queryingThreshold);
@@ -406,7 +233,6 @@ public class LazoIndex {
 	long e = System.currentTimeMillis();
 	this.ech_time += (e - s);
 	return candidates;
-
     }
 
     private long getAlpha(long minCardinality, long maxCardinality, float threshold) {

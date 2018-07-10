@@ -8,11 +8,11 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -82,42 +82,41 @@ public class LazoBenchmark {
 	List<String[]> allRows = null;
 	try {
 	    allRows = parser.parseAll(getReader(file));
-//System.out.println(allRows);
-	} 
-        //catch (FileNotFoundException e) {
-	//    e.printStackTrace();
-	//} 
+	    // System.out.println(allRows);
+	}
+	// catch (FileNotFoundException e) {
+	// e.printStackTrace();
+	// }
 	catch (Exception ex) {
 	    String absPath = file.getAbsolutePath();
- 	    failedFiles.add(absPath);
-            this.failed += 1;
-            ex.printStackTrace();
-            return null;
+	    failedFiles.add(absPath);
+	    this.failed += 1;
+	    ex.printStackTrace();
+	    return null;
 	}
-	try{
-	String[] header = allRows.get(0);
-	int idx = 0;
-	for (String columnName : header) {
-	    int id = hashName(file.getName(), columnName);
-	    tableSets.put(id, new HashSet<>());
-	    indexToHashId.put(idx, id);
-	    this.hashIdToName.put(id, file.getName() + "->" + columnName);
-	    idx++;
-	}
-	for (int i = 1; i < allRows.size(); i++) {
-	    String[] row = allRows.get(i);
-	    for (int j = 0; j < row.length; j++) {
-		// add value to correct column
-		tableSets.get(indexToHashId.get(j)).add(row[j]);
+	try {
+	    String[] header = allRows.get(0);
+	    int idx = 0;
+	    for (String columnName : header) {
+		int id = hashName(file.getName(), columnName);
+		tableSets.put(id, new HashSet<>());
+		indexToHashId.put(idx, id);
+		this.hashIdToName.put(id, file.getName() + "->" + columnName);
+		idx++;
 	    }
-	}
-	}
-	catch(Exception npe) {
+	    for (int i = 1; i < allRows.size(); i++) {
+		String[] row = allRows.get(i);
+		for (int j = 0; j < row.length; j++) {
+		    // add value to correct column
+		    tableSets.get(indexToHashId.get(j)).add(row[j]);
+		}
+	    }
+	} catch (Exception npe) {
 	    String absPath = file.getAbsolutePath();
- 	    failedFiles.add(absPath);
-            this.failed += 1;
-            npe.printStackTrace();
-            return null;
+	    failedFiles.add(absPath);
+	    this.failed += 1;
+	    npe.printStackTrace();
+	    return null;
 	}
 	long e = System.currentTimeMillis();
 	this.io_time += (e - s);
@@ -156,6 +155,7 @@ public class LazoBenchmark {
 
     public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float threshold, int k) {
 	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
+	// LazoIndexBase index = new LazoIndexBase(k);
 	LazoIndex index = new LazoIndex(k);
 	// Create sketches and index
 	Map<Integer, Sketch> idToSketch = new HashMap<>();
@@ -164,7 +164,7 @@ public class LazoBenchmark {
 	    System.out.println(files[i].getAbsolutePath());
 	    // Read file
 	    Map<Integer, Set<String>> table = obtainColumns(files[i]);
-            if (table == null) {
+	    if (table == null) {
 		continue; // table is broken
 	    }
 	    // Compute mh and insert to index
@@ -247,7 +247,7 @@ public class LazoBenchmark {
 	    System.out.println(xname + " ~= " + yname);
 	}
 	System.out.println("Total time: " + (end - start));
- 	System.out.println("Total failed tasks: " + mls.failed);
+	System.out.println("Total failed tasks: " + mls.failed);
 	System.out.println("io time: " + (mls.io_time));
 	System.out.println("index time: " + (mls.index_time));
 	System.out.println("query time: " + (mls.query_time));
