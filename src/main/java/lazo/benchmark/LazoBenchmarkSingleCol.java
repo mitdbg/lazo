@@ -26,7 +26,7 @@ import lazo.sketch.LazoSketch;
 import lazo.sketch.Sketch;
 import lazo.sketch.SketchType;
 
-public class LazoBenchmark {
+public class LazoBenchmarkSingleCol {
 
     // metrics
     private long io_time;
@@ -44,7 +44,7 @@ public class LazoBenchmark {
 
     private Map<String, File> nameToFile = new HashMap<>();
 
-    public LazoBenchmark() {
+    public LazoBenchmarkSingleCol() {
 	// csv parser
 	CsvParserSettings settings = new CsvParserSettings();
 	settings.getFormat().setLineSeparator("\n");
@@ -153,6 +153,23 @@ public class LazoBenchmark {
 	return verifiedPairs;
     }
 
+    private Set<String> readColumnFile(File f) {
+	Set<String> strings = new HashSet<>();
+	BufferedReader br;
+	try {
+	    br = new BufferedReader(new FileReader(f));
+	    String line = null;
+	    while ((line = br.readLine()) != null) {
+		strings.add(line);
+	    }
+	} catch (FileNotFoundException e) {
+	    e.printStackTrace();
+	} catch (IOException e) {
+	    e.printStackTrace();
+	}
+	return strings;
+    }
+
     public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float threshold, int k) {
 	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
 	// LazoIndexBase index = new LazoIndexBase(k);
@@ -162,28 +179,28 @@ public class LazoBenchmark {
 	for (int i = 0; i < files.length; i++) {
 	    System.out.println("Processing: " + i + "/" + files.length);
 	    System.out.println(files[i].getAbsolutePath());
+
 	    // Read file
-	    Map<Integer, Set<String>> table = obtainColumns(files[i]);
-	    if (table == null) {
+	    Set<String> col = readColumnFile(files[i]);
+	    // Map<Integer, Set<String>> table = obtainColumns(files[i]);
+	    if (col == null) {
 		continue; // table is broken
 	    }
-	    // Compute mh and insert to index
+
 	    long s = System.currentTimeMillis();
-	    for (Entry<Integer, Set<String>> e : table.entrySet()) {
-		int id = e.getKey();
-		LazoSketch ls = new LazoSketch(k, SketchType.MINHASH_OPTIMAL, HashFunctionType.MURMUR3);
-		Set<String> values = e.getValue();
-		boolean valid = false;
-		for (String value : values) {
-		    if (value != null) {
-			ls.update(value);
-			valid = true;
-		    }
+	    int id = files[i].getName().hashCode();
+	    LazoSketch ls = new LazoSketch(k, SketchType.MINHASH, HashFunctionType.MURMUR3);
+
+	    boolean valid = false;
+	    for (String value : col) {
+		if (value != null) {
+		    ls.update(value);
+		    valid = true;
 		}
-		if (valid) {
-		    index.insert(id, ls);
-		    idToSketch.put(id, ls);
-		}
+	    }
+	    if (valid) {
+		index.insert(id, ls);
+		idToSketch.put(id, ls);
 	    }
 	    long e = System.currentTimeMillis();
 	    this.index_time += (e - s);
@@ -212,7 +229,7 @@ public class LazoBenchmark {
 
     public static void main(String args[]) {
 
-	LazoBenchmark mls = new LazoBenchmark();
+	LazoBenchmarkSingleCol mls = new LazoBenchmarkSingleCol();
 
 	if (args.length < 4) {
 	    System.out.println("Usage: <inputPath> <outputPath> <similarityThreshold> <minhash-permutations>");

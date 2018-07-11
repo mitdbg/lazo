@@ -31,8 +31,6 @@ public class LazoIndex {
     private int gcdBands;
     private List<Map<Long, Set<Object>>> hashTables;
     private int[] hashRanges;
-    @Deprecated
-    private Map<Integer, MinHashLSH> indexes;
     private Map<Object, Long> keyCardinality;
 
     // threshold - (b,r)

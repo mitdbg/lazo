@@ -43,7 +43,7 @@ public class OOPHLSHSimilarity {
 	settings.getFormat().setLineSeparator("\n");
 	this.parser = new CsvParser(settings);
 
-	// id, names, etc
+	// id, names, etc=
 	this.hashIdToName = new HashMap<>();
 
     }

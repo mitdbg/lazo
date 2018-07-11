@@ -119,8 +119,8 @@ public class AllPairsSimilarity {
 			    continue; // avoid same keys within table
 			}
 			Set<String> b = entryB.getValue();
-			float js = Utils.computeJS(a, b);
-
+			float js_jcx_jcy[] = Utils.computeJSAndJC(a, b);
+			float js = js_jcx_jcy[0];
 			if (js >= threshold) {
 			    Pair<Integer, Integer> newPair1 = new Pair<Integer, Integer>(pivotKey, key);
 			    similarPairs.add(newPair1);

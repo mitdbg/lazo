@@ -122,7 +122,8 @@ public class InMemoryAllPairsSimilarity {
 	    for (int j = (i + 1); j < colIds.length; j++) {
 		int bKey = (Integer) colIds[j];
 		Set<String> b = allColumns.get(bKey);
-		float js = Utils.computeJS(a, b);
+		float js_jcx_jcy[] = Utils.computeJSAndJC(a, b);
+		float js = js_jcx_jcy[0];
 		if (js >= threshold) {
 		    similarPairs.add(new Pair<Integer, Integer>(aKey, bKey));
 		}
