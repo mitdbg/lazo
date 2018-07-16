@@ -2,7 +2,7 @@
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'eclipse'
-mainClassName = "lazo.benchmark.LazoBenchmarkSingleCol"
+mainClassName = "lazo.benchmark.ColInMemoryAllPairsSimilarity"
 
 version = '0.0.1'
 
