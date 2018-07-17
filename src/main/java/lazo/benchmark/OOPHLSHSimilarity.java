@@ -96,6 +96,75 @@ public class OOPHLSHSimilarity {
 	return tableSets;
     }
 
+    private Set<String> readColumnFile(File f) {
+	Set<String> strings = new HashSet<>();
+	BufferedReader br;
+	try {
+	    br = new BufferedReader(new FileReader(f));
+	    String line = null;
+	    while ((line = br.readLine()) != null) {
+		strings.add(line);
+	    }
+	} catch (FileNotFoundException e) {
+	    e.printStackTrace();
+	} catch (IOException e) {
+	    e.printStackTrace();
+	}
+	return strings;
+    }
+
+    public Set<Pair<Integer, Integer>> computeAllPairsCol(File[] files, float threshold, int k) {
+	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
+	// LazoIndexBase index = new LazoIndexBase(k);
+	MinHashLSH index = new MinHashLSH(threshold, k);
+	// Create sketches and index
+	Map<Integer, Sketch> idToSketch = new HashMap<>();
+	for (int i = 0; i < files.length; i++) {
+	    System.out.println("Processing: " + i + "/" + files.length);
+	    System.out.println(files[i].getAbsolutePath());
+
+	    // Read file
+	    Set<String> col = readColumnFile(files[i]);
+	    // Map<Integer, Set<String>> table = obtainColumns(files[i]);
+	    if (col == null) {
+		continue; // table is broken
+	    }
+
+	    long s = System.currentTimeMillis();
+	    int id = files[i].getName().hashCode();
+	    MinHashOptimal mh = new MinHashOptimal(k);
+
+	    boolean valid = false;
+	    for (String value : col) {
+		if (value != null) {
+		    mh.update(value);
+		    valid = true;
+		}
+	    }
+	    if (valid) {
+		index.insert(id, mh);
+		idToSketch.put(id, mh);
+	    }
+	    long e = System.currentTimeMillis();
+	    this.index_time += (e - s);
+	}
+	// Query to retrieve pairs
+	long s = System.currentTimeMillis();
+	for (Entry<Integer, Sketch> e : idToSketch.entrySet()) {
+	    int id = e.getKey();
+	    MinHashOptimal mh = (MinHashOptimal) e.getValue();
+	    Set<Object> candidates = index.query(mh);
+	    for (Object o : candidates) {
+		if (id != (int) o) {
+		    similarPairs.add(new Pair<Integer, Integer>(id, (int) o));
+		}
+	    }
+	}
+	long e = System.currentTimeMillis();
+	this.query_time = (e - s);
+	return similarPairs;
+    }
+
     public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float threshold, int k) {
 	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
 	MinHashLSH index = new MinHashLSH(threshold, k);
@@ -197,16 +266,18 @@ public class OOPHLSHSimilarity {
 	}
 	System.out.println("Found " + filesInPath.length + " files to process");
 	long start = System.currentTimeMillis();
-	Set<Pair<Integer, Integer>> output = oss.computeAllPairs(filesInPath, similarityThreshold, k);
+	Set<Pair<Integer, Integer>> output = oss.computeAllPairsCol(filesInPath, similarityThreshold, k);
 
-	long s = System.currentTimeMillis();
-	Set<Pair<Integer, Integer>> cleanOutput = oss.postProcessing(output, similarityThreshold);
-	long e = System.currentTimeMillis();
-	oss.post_time = (e - s);
+	// long s = System.currentTimeMillis();
+	// Set<Pair<Integer, Integer>> cleanOutput = oss.postProcessing(output,
+	// similarityThreshold);
+	// long e = System.currentTimeMillis();
+	// oss.post_time = (e - s);
 
 	long end = System.currentTimeMillis();
 
-	for (Pair<Integer, Integer> pair : cleanOutput) {
+	// for (Pair<Integer, Integer> pair : cleanOutput) {
+	for (Pair<Integer, Integer> pair : output) {
 	    int xid = pair.x;
 	    int yid = pair.y;
 	    String xname = oss.hashIdToName.get(xid);
@@ -219,14 +290,15 @@ public class OOPHLSHSimilarity {
 	System.out.println("query time: " + (oss.query_time));
 	System.out.println("post time: " + (oss.post_time));
 	System.out.println("Total sim candidates: " + output.size());
-	System.out.println("Total sim pairs: " + cleanOutput.size());
+	// System.out.println("Total sim pairs: " + cleanOutput.size());
 
 	// Write output in format x,y for all pairs
 	File f = new File(outputPath);
 	BufferedWriter bw = null;
 	try {
 	    bw = new BufferedWriter(new FileWriter(f));
-	    for (Pair<Integer, Integer> pair : cleanOutput) {
+	    // for (Pair<Integer, Integer> pair : cleanOutput) {
+	    for (Pair<Integer, Integer> pair : output) {
 		int xid = pair.x;
 		int yid = pair.y;
 		String line = xid + "," + yid + '\n';
