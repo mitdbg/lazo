@@ -202,13 +202,15 @@ public class MinHashLSHSimilarity {
 	long start = System.currentTimeMillis();
 	Set<Pair<Integer, Integer>> output = mls.computeAllPairs(filesInPath, similarityThreshold, k);
 
-	long s = System.currentTimeMillis();
-	Set<Pair<Integer, Integer>> cleanOutput = mls.postProcessing(output, similarityThreshold);
-	long e = System.currentTimeMillis();
-	mls.post_time = (e - s);
+	// long s = System.currentTimeMillis();
+	// Set<Pair<Integer, Integer>> cleanOutput = mls.postProcessing(output,
+	// similarityThreshold);
+	// long e = System.currentTimeMillis();
+	// mls.post_time = (e - s);
 
 	long end = System.currentTimeMillis();
-	for (Pair<Integer, Integer> pair : cleanOutput) {
+	// for (Pair<Integer, Integer> pair : cleanOutput) {
+	for (Pair<Integer, Integer> pair : output) {
 	    int xid = pair.x;
 	    int yid = pair.y;
 	    String xname = mls.hashIdToName.get(xid);
@@ -221,7 +223,7 @@ public class MinHashLSHSimilarity {
 	System.out.println("query time: " + (mls.query_time));
 	System.out.println("post time: " + (mls.post_time));
 	System.out.println("Total sim candidates: " + output.size());
-	System.out.println("Total sim pairs: " + cleanOutput.size());
+	// System.out.println("Total sim pairs: " + cleanOutput.size());
 
 	// Write output in format x,y for all pairs
 	File f = new File(outputPath);
@@ -229,7 +231,8 @@ public class MinHashLSHSimilarity {
 	try {
 	    bw = new BufferedWriter(new FileWriter(f));
 	    int repeated_pair = 0;
-	    for (Pair<Integer, Integer> pair : cleanOutput) {
+	    // for (Pair<Integer, Integer> pair : cleanOutput) {
+	    for (Pair<Integer, Integer> pair : output) {
 		int xid = pair.x;
 		int yid = pair.y;
 		if (xid == yid) {
