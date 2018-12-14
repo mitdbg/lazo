@@ -96,4 +96,9 @@ public class MinHash implements Sketch {
 	SketchUtils.initializeHashValues(this.k, this.maxHash);
     }
 
+    @Override
+    public void setHashValues(long[] hashValues) {
+	this.hashValues = hashValues;
+    }
+
 }

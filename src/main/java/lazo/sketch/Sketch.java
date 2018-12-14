@@ -6,4 +6,6 @@ public interface Sketch {
 
     public long[] getHashValues();
 
+    public void setHashValues(long[] hashValues);
+
 }

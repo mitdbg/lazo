@@ -9,14 +9,29 @@ public class LazoSketch implements Sketch {
     private int k;
     private int seed;
     private HashFunction hf;
+    private SketchType sketchType;
+    private HashFunctionType hashFunctionType;
 
     private long cardinality = -1;
     private Sketch underlyingSketch;
     private ICardinality ic;
 
+    public int getK() {
+	return k;
+    }
+
+    public SketchType getSketchType() {
+	return this.sketchType;
+    }
+
+    public HashFunctionType getHashFunctionType() {
+	return hashFunctionType;
+    }
+
     public LazoSketch(int k, SketchType sketchType, HashFunctionType hft) {
 	this.k = k;
 	this.seed = 666;
+	this.sketchType = sketchType;
 	this.hf = SketchUtils.initializeHashFunction(hft, this.k);
 	switch (sketchType) {
 	case MINHASH:
@@ -70,6 +85,11 @@ public class LazoSketch implements Sketch {
     @Override
     public long[] getHashValues() {
 	return underlyingSketch.getHashValues();
+    }
+
+    @Override
+    public void setHashValues(long[] hashValues) {
+	this.underlyingSketch.setHashValues(hashValues);
     }
 
 }

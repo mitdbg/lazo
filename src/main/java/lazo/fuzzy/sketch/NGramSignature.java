@@ -17,6 +17,15 @@ public class NGramSignature implements Signature {
     private int k;
     private Map<Integer, LazoSketch> sketches;
 
+    public int getK() {
+	return k;
+    }
+
+    @Override
+    public int getN() {
+	return this.n;
+    }
+
     public NGramSignature(int n, int k) {
 	this.n = n;
 	this.k = k;
@@ -26,11 +35,14 @@ public class NGramSignature implements Signature {
 	for (int ngramSize = 2; ngramSize < n + 1; ngramSize++) {
 	    LazoSketch sketch = new LazoSketch(k, SketchType.MINHASH);
 	    // Minimum is 2 and maximum is the actual 'n' provided
-	    this.sketches.put(ngramSize, sketch);
+	    this.setSketch(ngramSize, sketch);
 	}
 	// We add an additional sketch for the entire string
-	this.sketches.put(ORIGINAL_STRING, new LazoSketch(k, SketchType.MINHASH));
+	this.setSketch(ORIGINAL_STRING, new LazoSketch(k, SketchType.MINHASH));
+    }
 
+    public void setSketch(int ngramSize, LazoSketch sketch) {
+	this.sketches.put(ngramSize, sketch);
     }
 
     public void update(String s) {
@@ -49,11 +61,6 @@ public class NGramSignature implements Signature {
     @Override
     public LazoSketch getSketch(int ngramSize) {
 	return this.sketches.get(ngramSize);
-    }
-
-    @Override
-    public int getN() {
-	return this.n;
     }
 
     @Override

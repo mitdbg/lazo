@@ -40,4 +40,21 @@ public class SketchUtils {
 	Arrays.fill(hashValues, fillValue);
 	return hashValues;
     }
+
+    public static LazoSketch merge(LazoSketch a, LazoSketch b) {
+	long[] aHV = a.getHashValues();
+	long[] bHV = b.getHashValues();
+	assert (aHV.length == bHV.length);
+	long[] mergedHashValues = new long[aHV.length];
+	for (int i = 0; i < aHV.length; i++) {
+	    if (aHV[i] <= bHV[i]) {
+		mergedHashValues[i] = aHV[i];
+	    } else {
+		mergedHashValues[i] = bHV[i];
+	    }
+	}
+	LazoSketch merged = new LazoSketch(a.getK(), a.getSketchType(), a.getHashFunctionType());
+	merged.setHashValues(mergedHashValues);
+	return merged;
+    }
 }

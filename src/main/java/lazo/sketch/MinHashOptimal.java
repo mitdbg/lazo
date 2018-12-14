@@ -134,4 +134,9 @@ public class MinHashOptimal implements Sketch {
 	SketchUtils.initializeHashValues(this.k, this.empty);
     }
 
+    @Override
+    public void setHashValues(long[] hashValues) {
+	this.hashValues = hashValues;
+    }
+
 }
