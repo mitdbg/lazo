@@ -44,3 +44,8 @@ jar {
                     'Implementation-Version': project.version)
     }
 }
+
+task execute(type:JavaExec) {
+    main = mainClass
+    classpath = sourceSets.main.runtimeClasspath
+}
