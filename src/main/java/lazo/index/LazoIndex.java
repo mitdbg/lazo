@@ -92,6 +92,10 @@ public class LazoIndex {
 
     }
 
+    public int __getNumHashTables() {
+	return this.hashTables.size();
+    }
+
     private int gcd(int x, int y) {
 	// Euclid's algo
 	return (y == 0) ? x : gcd(y, x % y);

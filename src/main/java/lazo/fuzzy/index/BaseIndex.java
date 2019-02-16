@@ -25,12 +25,10 @@ public class BaseIndex {
 	this.k = k;
 	this.n = n;
 	indexes = new HashMap<>();
-
 	for (int ngramSize = 2; ngramSize < n + 1; ngramSize++) {
 	    indexes.put(ngramSize, new LazoIndex(k, D));
 	}
 	indexes.put(ORIGINAL_STRING, new LazoIndex(k, D));
-
     }
 
     public boolean insert(Object key, NGramSignature signature) {

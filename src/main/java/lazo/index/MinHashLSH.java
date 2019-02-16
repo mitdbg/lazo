@@ -26,6 +26,10 @@ public class MinHashLSH {
     // integration precision
     private float IP = 0.001f;
 
+    public int __getNumberHashTables() {
+	return this.hashTables.size();
+    }
+
     public MinHashLSH(float threshold, int k) {
 	this.threshold = threshold;
 	this.k = k;

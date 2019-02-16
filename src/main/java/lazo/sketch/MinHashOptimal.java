@@ -7,11 +7,16 @@ import java.util.stream.LongStream;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 
+/**
+ * This sketch is an immplementation of "Optimal Densification for fast and
+ * accurate minwise hashing" Anshumali Shrivastava, ICML'17
+ * 
+ * @author Raul - raulcf@csail.mit.edu
+ */
+
 public class MinHashOptimal implements Sketch {
 
     private final long mersennePrime = (1 << 61) - 1;
-    // private final long maxHash = (1L << 32) - 2;
-    // private final long empty = maxHash + 1;
     private final long empty = Long.MAX_VALUE;
 
     private final int random;
@@ -77,7 +82,6 @@ public class MinHashOptimal implements Sketch {
 
 	int bucket = (int) hv % this.k;
 
-	// FIXME: this looks wrong
 	bucket = Math.abs(bucket);
 
 	if (hv < this.hashValues[bucket]) {
@@ -107,17 +111,6 @@ public class MinHashOptimal implements Sketch {
 	    if (this.hashValues[i] == this.empty) {
 		int nonce = 0;
 		while (this.hashValues[i] == this.empty) {
-		    // boolean allsame = true;
-		    // for (int k = 0; k < this.hashValues.length; k++) {
-		    // if (this.hashValues[k] != this.empty) {
-		    // allsame = false;
-		    // }
-		    // }
-		    // if (allsame) {
-		    // System.out.println("This is broken");
-		    // System.out.println("USED?: " + used);
-		    // System.exit(0);
-		    // }
 		    nonce++;
 		    int index = this.getRandomDoubleHash(i, nonce);
 		    this.hashValues[i] = this.hashValues[index];

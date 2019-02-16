@@ -3,6 +3,7 @@ package lazo.index;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import lazo.sketch.LazoSketch;
@@ -36,6 +37,14 @@ public class LazoIndexBase {
 	    float threshold = d * i;
 	    this.indexes.put(i, new MinHashLSH(threshold, k));
 	}
+    }
+
+    public int __getNumHashTables() {
+	int total = 0;
+	for (Entry<Integer, MinHashLSH> index : indexes.entrySet()) {
+	    total += index.getValue().__getNumberHashTables();
+	}
+	return total;
     }
 
     public LazoIndexBase(int k) {
