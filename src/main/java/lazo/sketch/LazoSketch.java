@@ -28,6 +28,29 @@ public class LazoSketch implements Sketch {
 	return hashFunctionType;
     }
 
+    public LazoSketch(int k, SketchType sketchType, HashFunctionType hft, ICardinality ic) {
+	this.k = k;
+	this.seed = 666;
+	this.sketchType = sketchType;
+	this.hf = SketchUtils.initializeHashFunction(hft, this.k);
+	switch (sketchType) {
+	case MINHASH:
+	    this.underlyingSketch = new MinHash(k);
+	    break;
+	case MINHASH_OPTIMAL:
+	    this.underlyingSketch = new MinHashOptimal(k);
+	    break;
+	default:
+	    System.out.println("Sketch type unrecognized");
+	}
+	// Cardinality estimator here
+	this.ic = ic;
+    }
+
+    public ICardinality getCardinalityEstimator() {
+	return this.ic;
+    }
+
     public LazoSketch(int k, SketchType sketchType, HashFunctionType hft) {
 	this.k = k;
 	this.seed = 666;

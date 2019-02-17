@@ -40,6 +40,7 @@ public class SignatureUtils {
 	assert (an == bn);
 
 	float aggrMetric = 0;
+	int metrics = 0;
 	for (int ngramSize = 2; ngramSize < an + 1; ngramSize++) {
 	    long aHV[] = a.getSketch(ngramSize).getHashValues();
 	    long bHV[] = b.getSketch(ngramSize).getHashValues();
@@ -49,13 +50,19 @@ public class SignatureUtils {
 		    matches++;
 	    }
 	    float jsMetric = matches / aHV.length;
-	    // apply lazo method -- FIXME: merging may need to merge
-	    // cardinalities as well to do this right
-	    // aggregated as in the original one
+	    long cardinalityA = a.getSketch(ngramSize).getCardinality();
+	    long cardinalityB = b.getSketch(ngramSize).getCardinality();
+	    long minCardinality = Math.min(cardinalityA, cardinalityB);
+	    long maxCardinality = Math.max(cardinalityA, cardinalityB);
+	    long alpha = (long) ((minCardinality - (jsMetric * maxCardinality)) / (1 + jsMetric));
+	    long ix = minCardinality - alpha;
 
+	    float jc = ix / cardinalityA;
+	    aggrMetric += jc; // TODO: note we're using JC directly in this case
+	    metrics += 1;
 	}
-
-	return 0f;
+	float simpleAvgAggrMetric = aggrMetric / metrics;
+	return simpleAvgAggrMetric;
     }
 
 }
