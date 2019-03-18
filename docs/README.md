@@ -8,8 +8,8 @@ under development and will be made available soon.
 
 We are using Lazo within the context of data discovery, and in particular,
 Aurum. For more information take a look at 
-[this project](mitdbg.github.io/aurum-datadiscovery)
-and the relevant papers in [my webpage](www.raulcastrofernandez.com).
+[this project](http://mitdbg.github.io/aurum-datadiscovery)
+and the relevant papers in [my webpage](http://www.raulcastrofernandez.com).
 
 
 ### Quick Start
