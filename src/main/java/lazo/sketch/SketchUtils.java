@@ -11,10 +11,10 @@ public class SketchUtils {
 
     public static float jaccard(long[] one, long[] other) {
 	if (one.length != other.length) {
-	    // TODO
+	    throw new IllegalArgumentException("Cannot compute Jaccard of differently-sized MinHash sketches");
 	}
-	int k = one.length;
-	int hits = 0;
+	float k = one.length;
+	float hits = 0;
 	for (int i = 0; i < k; i++) {
 	    if (one[i] == other[i])
 		hits++;
@@ -27,12 +27,7 @@ public class SketchUtils {
 	HashFunction hf = null;
 	switch (hft) {
 	case MURMUR3:
-	    hf = Hashing.murmur3_32(seed);
-	case SHA1:
-	    hf = Hashing.sha1();
-	default:
-	    // TODO error
-	    break;
+	    hf = Hashing.murmur3_128(seed);
 	}
 	return hf;
     }
