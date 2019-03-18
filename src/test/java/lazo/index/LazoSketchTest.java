@@ -55,7 +55,6 @@ public class LazoSketchTest {
 
 	// check cardinality again
 	long cardinality = mh3.getCardinality();
-	System.out.println(cardinality);
 
 	assertTrue(cardinality > 4900 && cardinality < 10500);
 
@@ -82,7 +81,6 @@ public class LazoSketchTest {
 
 	// check cardinality again
 	long cardinality = mh3.getCardinality();
-	System.out.println(cardinality);
 
 	assertTrue(cardinality > 4900 && cardinality < 5100);
 

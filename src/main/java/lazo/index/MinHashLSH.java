@@ -10,14 +10,18 @@ import java.util.Set;
 
 import lazo.sketch.Sketch;
 
+/**
+ * This MinHash LSH implementation is based on the datasketch one
+ * (https://ekzhu.github.io/datasketch/lsh.html)
+ * 
+ * @author Raul - raulcf@csail.mit.edu
+ */
 public class MinHashLSH {
 
     private float threshold;
     private int k;
     private int bands;
     private int rows;
-    private float false_positive_rate;
-    private float false_negative_rate;
 
     private List<Map<Long, List<Object>>> hashTables;
     private int[] hashRanges;
@@ -31,6 +35,12 @@ public class MinHashLSH {
     }
 
     public MinHashLSH(float threshold, int k) {
+	if (threshold < 0 || threshold > 1) {
+	    throw new IllegalArgumentException("Threshold must be in the range [0,1]");
+	}
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
 	this.threshold = threshold;
 	this.k = k;
 	// 0.5 are good default values for false positive and negative
@@ -41,6 +51,12 @@ public class MinHashLSH {
     }
 
     public MinHashLSH(float threshold, int k, float false_positive_rate, float false_negative_rate) {
+	if (threshold < 0 || threshold > 1) {
+	    throw new IllegalArgumentException("Threshold must be in the range [0,1]");
+	}
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
 	this.threshold = threshold;
 	this.k = k;
 	this.computeOptimalParameters(this.threshold, this.k, false_positive_rate, false_negative_rate);
@@ -50,6 +66,21 @@ public class MinHashLSH {
     }
 
     public MinHashLSH(float threshold, int k, int bands, int rows) {
+	if (threshold < 0 || threshold > 1) {
+	    throw new IllegalArgumentException("Threshold must be in the range [0,1]");
+	}
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
+	// FIXME: cannot be much smaller either, although for numerical reasons,
+	// we may lose a couple of
+	// permutations depending on the specific k value given by the user. One
+	// option is to disallow that
+	// for soundness. Other option is to just check that the value is not
+	// 'too far' from k.
+	if (rows * bands > k) {
+	    throw new IllegalArgumentException("Bands * Rows cannot be larger than k");
+	}
 	this.threshold = threshold;
 	this.k = k;
 	this.bands = bands;
@@ -83,7 +114,6 @@ public class MinHashLSH {
 	    x = x + IP;
 	}
 	return (float) area;
-
     }
 
     private float computeFalseNegativeProbability(float threshold, int bands, int rows) {

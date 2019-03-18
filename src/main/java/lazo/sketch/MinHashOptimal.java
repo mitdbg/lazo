@@ -8,7 +8,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 
 /**
- * This sketch is an immplementation of "Optimal Densification for fast and
+ * This sketch is an implementation of "Optimal Densification for fast and
  * accurate minwise hashing" Anshumali Shrivastava, ICML'17
  * 
  * @author Raul - raulcf@csail.mit.edu
