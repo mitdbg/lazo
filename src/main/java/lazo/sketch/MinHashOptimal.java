@@ -34,20 +34,25 @@ public class MinHashOptimal implements Sketch {
     private boolean densified = false;
 
     public MinHashOptimal(int k) {
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
 	this.k = k;
 	this.seed = 666;
-	this.hf = SketchUtils.initializeHashFunction(HashFunctionType.MURMUR3, this.k);
+	this.hf = SketchUtils.initializeHashFunction(HashFunctionType.MURMUR3, this.seed);
 	this.hashValues = SketchUtils.initializeHashValues(k, this.empty);
 	this.initializePermutations();
 
 	Random rnd = new Random(this.seed);
 	this.random = rnd.nextInt(Integer.MAX_VALUE - 1) + 1;
 	this.theHashValue = this.random % 2 == 0 ? this.random : this.random + 1;
-
 	this.logPermutations = (int) (Math.log(this.k) / Math.log(2)) + 1;
     }
 
     public MinHashOptimal(int k, int seed, HashFunctionType hashFunctionType) {
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
 	this.k = k;
 	this.seed = seed;
 	this.hf = SketchUtils.initializeHashFunction(hashFunctionType, this.seed);
@@ -61,22 +66,37 @@ public class MinHashOptimal implements Sketch {
 	this.logPermutations = (int) (Math.log(this.k) / Math.log(2));
     }
 
+    public long getEmptyValue() {
+	return this.empty;
+    }
+
     private void initializePermutations() {
 	// FIXME; factorize common to minhash
 	Random gen = new Random(this.seed);
-	a = new long[k];
-	b = new long[k];
 	LongStream as = gen.longs(k, 1, mersennePrime);
 	LongStream bs = gen.longs(k, 0, mersennePrime);
 	a = as.toArray();
 	b = bs.toArray();
     }
 
-    boolean used = false;
+    @Override
+    public long[] getHashValues() {
+	if (!densified) {
+	    this.densify();
+	}
+	return this.hashValues;
+    }
 
     @Override
     public void update(String value) {
-	used = true;
+	if (value == null) {
+	    throw new IllegalArgumentException("Value cannot be null");
+	}
+	if (densified) {
+	    throw new IllegalStateException("This MinHash has been previously densified; adding new"
+		    + "values post-densification is not well defined. In particular, those values are not"
+		    + "guaranteed to be reflected in the MinHash.");
+	}
 	HashCode hc = hf.hashString(value, Charset.defaultCharset());
 	long hv = hc.asLong();
 
@@ -89,14 +109,6 @@ public class MinHashOptimal implements Sketch {
 	}
     }
 
-    @Override
-    public long[] getHashValues() {
-	if (!densified) {
-	    this.densify();
-	}
-	return this.hashValues;
-    }
-
     private int getRandomDoubleHash(int bucketId, int count) {
 	int toh = ((bucketId + 1) << 10) + count;
 	long newValue = ((int) (this.theHashValue * toh << 3) >> (32 - this.logPermutations));
@@ -107,6 +119,7 @@ public class MinHashOptimal implements Sketch {
     }
 
     public void densify() {
+	this.densified = true;
 	for (int i = 0; i < this.hashValues.length; i++) {
 	    if (this.hashValues[i] == this.empty) {
 		int nonce = 0;
@@ -119,7 +132,7 @@ public class MinHashOptimal implements Sketch {
 	}
     }
 
-    public float jaccard(MinHash other) {
+    public float jaccard(MinHashOptimal other) {
 	return SketchUtils.jaccard(this.getHashValues(), other.getHashValues());
     }
 
@@ -129,6 +142,9 @@ public class MinHashOptimal implements Sketch {
 
     @Override
     public void setHashValues(long[] hashValues) {
+	if (hashValues.length != this.k) {
+	    throw new IllegalArgumentException("Input array size incompatible with this number of permutations (k)");
+	}
 	this.hashValues = hashValues;
     }
 

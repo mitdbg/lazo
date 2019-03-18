@@ -42,6 +42,9 @@ public class MinHash implements Sketch {
     }
 
     public MinHash(long[] hashValues, int seed, HashFunction hashFunction) {
+	if (hashValues.length <= 0) {
+	    throw new IllegalArgumentException("The number of hashValues must be positive (> 0)");
+	}
 	this.k = hashValues.length;
 	this.seed = seed;
 	this.hf = hashFunction;
