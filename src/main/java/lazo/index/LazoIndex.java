@@ -40,6 +40,13 @@ public class LazoIndex {
     private float IP = 0.001f;
 
     public LazoIndex(int k, float d) {
+	if (d < 0 || d > 0.5) {
+	    throw new IllegalArgumentException(
+		    "Threshold for d must be in the range [0,0.5], recommended:" + "0.05 or 0.1");
+	}
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
 	this.k = k;
 	this.d = d;
 	this.fp_rate = 0.5f;
@@ -49,6 +56,9 @@ public class LazoIndex {
     }
 
     public LazoIndex(int k) {
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
 	this.k = k;
 	this.d = 0.05f; // default for 20 indexes
 	this.fp_rate = 0.5f;
@@ -101,7 +111,7 @@ public class LazoIndex {
 	return (y == 0) ? x : gcd(y, x % y);
     }
 
-    private int findGCDOf(Integer... numbers) {
+    public int findGCDOf(Integer... numbers) {
 	return Arrays.stream(numbers).reduce(0, (x, y) -> gcd(x, y));
     }
 
