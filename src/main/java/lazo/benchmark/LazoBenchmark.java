@@ -21,7 +21,6 @@ import com.univocity.parsers.csv.CsvParserSettings;
 
 import lazo.index.LazoIndex;
 import lazo.index.LazoIndex.LazoCandidate;
-import lazo.sketch.HashFunctionType;
 import lazo.sketch.LazoSketch;
 import lazo.sketch.Sketch;
 import lazo.sketch.SketchType;
@@ -171,7 +170,7 @@ public class LazoBenchmark {
 	    long s = System.currentTimeMillis();
 	    for (Entry<Integer, Set<String>> e : table.entrySet()) {
 		int id = e.getKey();
-		LazoSketch ls = new LazoSketch(k, SketchType.MINHASH_OPTIMAL, HashFunctionType.MURMUR3);
+		LazoSketch ls = new LazoSketch(k, SketchType.MINHASH_OPTIMAL);
 		Set<String> values = e.getValue();
 		boolean valid = false;
 		for (String value : values) {

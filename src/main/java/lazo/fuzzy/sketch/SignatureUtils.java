@@ -1,7 +1,6 @@
 package lazo.fuzzy.sketch;
 
 import lazo.sketch.LazoSketch;
-import lazo.sketch.SketchUtils;
 
 public class SignatureUtils {
 
@@ -23,7 +22,8 @@ public class SignatureUtils {
 	    } else if (bls == null && als != null) {
 		merged.setSketch(ngramSize, als);
 	    } else {
-		LazoSketch mergeSketch = SketchUtils.merge(als, bls);
+		// LazoSketch mergeSketch = SketchUtils.merge(als, bls);
+		LazoSketch mergeSketch = als.merge(bls);
 		merged.setSketch(ngramSize, mergeSketch);
 	    }
 	}

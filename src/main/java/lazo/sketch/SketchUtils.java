@@ -2,8 +2,6 @@ package lazo.sketch;
 
 import java.util.Arrays;
 
-import com.clearspring.analytics.stream.cardinality.CardinalityMergeException;
-import com.clearspring.analytics.stream.cardinality.ICardinality;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 
@@ -38,27 +36,4 @@ public class SketchUtils {
 	return hashValues;
     }
 
-    public static LazoSketch merge(LazoSketch a, LazoSketch b) {
-	long[] aHV = a.getHashValues();
-	long[] bHV = b.getHashValues();
-	assert (aHV.length == bHV.length);
-	long[] mergedHashValues = new long[aHV.length];
-	for (int i = 0; i < aHV.length; i++) {
-	    if (aHV[i] <= bHV[i]) {
-		mergedHashValues[i] = aHV[i];
-	    } else {
-		mergedHashValues[i] = bHV[i];
-	    }
-	}
-	// merge cardinality estimator as well
-	ICardinality mergedCardinality = null;
-	try {
-	    mergedCardinality = a.getCardinalityEstimator().merge(b.getCardinalityEstimator());
-	} catch (CardinalityMergeException e) {
-	    e.printStackTrace();
-	}
-	LazoSketch merged = new LazoSketch(a.getK(), a.getSketchType(), a.getHashFunctionType(), mergedCardinality);
-	merged.setHashValues(mergedHashValues);
-	return merged;
-    }
 }
