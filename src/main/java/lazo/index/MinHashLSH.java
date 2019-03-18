@@ -25,7 +25,6 @@ public class MinHashLSH {
 
     private List<Map<Long, List<Object>>> hashTables;
     private int[] hashRanges;
-    private Map<Object, List<long[]>> keys;
 
     // integration precision
     private float IP = 0.001f;
@@ -47,7 +46,6 @@ public class MinHashLSH {
 	this.computeOptimalParameters(this.threshold, this.k, 0.5f, 0.5f);
 
 	this.initializeHashTables(bands);
-	this.keys = new HashMap<>();
     }
 
     public MinHashLSH(float threshold, int k, float false_positive_rate, float false_negative_rate) {
@@ -62,7 +60,6 @@ public class MinHashLSH {
 	this.computeOptimalParameters(this.threshold, this.k, false_positive_rate, false_negative_rate);
 
 	this.initializeHashTables(bands);
-	this.keys = new HashMap<>();
     }
 
     public MinHashLSH(float threshold, int k, int bands, int rows) {
@@ -87,7 +84,6 @@ public class MinHashLSH {
 	this.rows = rows;
 
 	this.initializeHashTables(bands);
-	this.keys = new HashMap<>();
     }
 
     private void initializeHashTables(int bands) {
@@ -164,12 +160,10 @@ public class MinHashLSH {
 	    long[] segment = Arrays.copyOfRange(mh.getHashValues(), start, end);
 	    segments.add(segment);
 	}
-	this.keys.put(key, segments);
 
 	for (int i = 0; i < this.bands; i++) {
 	    long[] sg = segments.get(i);
 	    Map<Long, List<Object>> hashTable = hashTables.get(i);
-	    // FIXME: get repr for sg that is hashable and works with maps
 	    long segId = segmentHash(sg);
 	    if (hashTable.get(segId) == null) {
 		List<Object> l = new ArrayList<>();

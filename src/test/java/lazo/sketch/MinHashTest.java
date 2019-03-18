@@ -1,4 +1,4 @@
-package lazo.index;
+package lazo.sketch;
 
 import static org.junit.Assert.assertTrue;
 
