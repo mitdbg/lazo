@@ -40,7 +40,7 @@ this builds the library and runs the tests. The output will be in a repository
 *build* in the root directory of the project. For convenience, this command
 creates a **jar** file, which you can easily link to your project.
 
-**Note: ** Lazo uses the Gradle build tool. The project includes the [gradle
+**Note:** Lazo uses the [Gradle build tool](https://docs.gradle.org). The project includes the [gradle
 wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html), which
 means you don't need to install anything: the wrapper will download all
 the necessary files of the build system.
@@ -53,34 +53,34 @@ search for those that are similar to a query set (q). The workflow for that is
 search; 2) insert the sketch into the Lazo index; and 3) query the index with
 the sketch for q.
 
-**Creating a sketch of a set: **Creating a sketch of a set of *values*:
+**Creating a sketch of a set:** Creating a sketch of a set of *values*:
 
-`
+```
 LazoSketch sketch = new LazoSketch();
 for (String value : values) {
     sketch.update(value);
 }
-`
+```
 
 the method `update` takes a string as input parameter. You can update the sketch
 as data becomes available if that's necessary.
 
-**Indexing a sketch: **To index the *sketch* in the Lazo Index is as simple as:
+**Indexing a sketch:** To index the *sketch* in the Lazo Index is as simple as:
 
-`
+```
 LazoIndex index = new LazoIndex();
 index.insert(<key>, sketch);
-`
+```
 
 Note the *key* argument of the insert function can be any Java Object.
 
-**Querying the index: **To query the index, i.e., find all sketches similar to
+**Querying the index:** To query the index, i.e., find all sketches similar to
 an input sketch *q*:
 
-`
+```
 Set<LazoCandidate> results = index.querySimilarity(q, <similarity_threshold>);
 Set<LazoCandidate> results = index.queryContainment(q, <containment_threshold>);
-` 
+```
 
 The *similarity_* and *containment_threshold* must be a floating number in the
 range [0,1]. The object LazoCandidate contains the <key> used to identify the
