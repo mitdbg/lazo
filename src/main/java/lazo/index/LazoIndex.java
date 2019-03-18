@@ -39,16 +39,9 @@ public class LazoIndex {
     // integration precision
     private float IP = 0.001f;
 
-    public LazoIndex(int k, float d) {
-	if (d < 0 || d > 0.5) {
-	    throw new IllegalArgumentException(
-		    "Threshold for d must be in the range [0,0.5], recommended:" + "0.05 or 0.1");
-	}
-	if (k <= 0) {
-	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
-	}
-	this.k = k;
-	this.d = d;
+    public LazoIndex() {
+	this.k = 64;
+	this.d = 0.05f; // default for 20 indexes
 	this.fp_rate = 0.5f;
 	this.fn_rate = 0.5f;
 
@@ -61,6 +54,22 @@ public class LazoIndex {
 	}
 	this.k = k;
 	this.d = 0.05f; // default for 20 indexes
+	this.fp_rate = 0.5f;
+	this.fn_rate = 0.5f;
+
+	this.initIndex(this.k, this.d, this.fp_rate, this.fn_rate);
+    }
+
+    public LazoIndex(int k, float d) {
+	if (d < 0 || d > 0.5) {
+	    throw new IllegalArgumentException(
+		    "Threshold for d must be in the range [0,0.5], recommended:" + "0.05 or 0.1");
+	}
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
+	this.k = k;
+	this.d = d;
 	this.fp_rate = 0.5f;
 	this.fn_rate = 0.5f;
 

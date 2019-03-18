@@ -13,6 +13,25 @@ public class LazoSketch implements Sketch {
     private Sketch underlyingSketch;
     private ICardinality ic;
 
+    public LazoSketch() {
+	this.k = 64;
+	this.sketchType = SketchType.MINHASH; // default
+	this.underlyingSketch = new MinHash(k);
+	// Cardinality estimator here
+	ic = new HyperLogLogPlus(18, 25);
+    }
+
+    public LazoSketch(int k) {
+	if (k <= 0) {
+	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
+	}
+	this.k = k;
+	this.sketchType = SketchType.MINHASH; // default
+	this.underlyingSketch = new MinHash(k);
+	// Cardinality estimator here
+	ic = new HyperLogLogPlus(18, 25);
+    }
+
     public LazoSketch(int k, SketchType sketchType) {
 	if (k <= 0) {
 	    throw new IllegalArgumentException("The number of permutations must be positive (> 0)");
