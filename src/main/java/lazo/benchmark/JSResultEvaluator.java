@@ -7,11 +7,11 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ResultEvaluator {
+public class JSResultEvaluator {
 
     public static void main(String args[]) {
 
-	ResultEvaluator re = new ResultEvaluator();
+	JSResultEvaluator re = new JSResultEvaluator();
 
 	String file1 = args[0]; // ground truth file
 	String file2 = args[1]; // results

@@ -28,6 +28,26 @@ public class Utils {
 	return js;
     }
 
+    public static float computeJC(Set<String> a, Set<String> b) {
+	float ix = 0;
+	Set<String> smaller = null;
+	Set<String> larger = null;
+	if (a.size() >= b.size()) {
+	    smaller = b;
+	    larger = a;
+	} else {
+	    smaller = a;
+	    larger = b;
+	}
+	for (String s : smaller) {
+	    if (larger.contains(s)) {
+		ix += 1;
+	    }
+	}
+
+	return (float) (ix / (float) a.size());
+    }
+
     public static float[] computeJSAndJC(Set<String> a, Set<String> b) {
 	float js_jcx_jcy[] = new float[3];
 

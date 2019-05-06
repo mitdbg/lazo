@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -97,8 +98,11 @@ public class AllPairsContainment {
 	return valid;
     }
 
-    public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float threshold) {
-	Set<Pair<Integer, Integer>> similarPairs = new HashSet<>();
+    // public Set<Pair<Integer, Integer>> computeAllPairs(File[] files, float
+    // threshold) {
+    public List<String> computeAllPairs(File[] files, float threshold) {
+	// Set<Pair<Integer, Integer>> pairs = new HashSet<>();
+	List<String> pairs = new ArrayList<>();
 	// Set<Pair<Integer, Integer>> seenPairs = new HashSet<>();
 	for (int i = 0; i < files.length; i++) {
 	    System.out.println("Processing: " + i + "/" + files.length);
@@ -119,17 +123,23 @@ public class AllPairsContainment {
 			    continue; // avoid same keys within table
 			}
 			Set<String> b = entryB.getValue();
-			float js = Utils.computeJS(a, b);
+			if (!validSet(b)) {
+			    continue;
+			}
+			float jc = Utils.computeJC(a, b);
 
-			if (js >= threshold) {
-			    Pair<Integer, Integer> newPair1 = new Pair<Integer, Integer>(pivotKey, key);
-			    similarPairs.add(newPair1);
+			if (jc >= threshold) {
+			    // Pair<Integer, Integer> newPair1 = new
+			    // Pair<Integer, Integer>(pivotKey, key);
+			    // pairs.add(newPair1);
+			    String line = pivotKey + "," + key + '\n';
+			    pairs.add(line);
 			}
 		    }
 		}
 	    }
 	}
-	return similarPairs;
+	return pairs;
     }
 
     public static void main(String args[]) {
@@ -147,15 +157,17 @@ public class AllPairsContainment {
 	File[] filesInPath = aps.enumerateFiles(inputPath);
 	System.out.println("Found " + filesInPath.length + " files to process");
 	long start = System.currentTimeMillis();
-	Set<Pair<Integer, Integer>> output = aps.computeAllPairs(filesInPath, similarityThreshold);
+	// Set<Pair<Integer, Integer>> output = aps.computeAllPairs(filesInPath,
+	// similarityThreshold);
+	List<String> output = aps.computeAllPairs(filesInPath, similarityThreshold);
 	long end = System.currentTimeMillis();
-	for (Pair<Integer, Integer> pair : output) {
-	    int xid = pair.x;
-	    int yid = pair.y;
-	    String xname = aps.hashIdToName.get(xid);
-	    String yname = aps.hashIdToName.get(yid);
-	    System.out.println(xname + " ~= " + yname);
-	}
+	// for (Pair<Integer, Integer> pair : output) {
+	// int xid = pair.x;
+	// int yid = pair.y;
+	// String xname = aps.hashIdToName.get(xid);
+	// String yname = aps.hashIdToName.get(yid);
+	// System.out.println(xname + " ~= " + yname);
+	// }
 	System.out.println("Total time: " + (end - start));
 	System.out.println("IO time: " + aps.io_time);
 	System.out.println("Total sim pairs: " + output.size());
@@ -165,10 +177,11 @@ public class AllPairsContainment {
 	BufferedWriter bw = null;
 	try {
 	    bw = new BufferedWriter(new FileWriter(f));
-	    for (Pair<Integer, Integer> pair : output) {
-		int xid = pair.x;
-		int yid = pair.y;
-		String line = xid + "," + yid + '\n';
+	    // for (Pair<Integer, Integer> pair : output) {
+	    for (String line : output) {
+		// int xid = pair.x;
+		// int yid = pair.y;
+		// String line = xid + "," + yid + '\n';
 		bw.write(line);
 	    }
 	    bw.flush();

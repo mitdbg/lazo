@@ -88,11 +88,11 @@ public class LazoIndexBase {
     }
 
     public Set<LazoCandidate> querySimilarity(LazoSketch sketch, float js_threshold) {
-	return this.query(sketch, js_threshold, 0);
+	return this.query(sketch, js_threshold, 0f);
     }
 
     public Set<LazoCandidate> queryContainment(LazoSketch sketch, float jcx_threshold) {
-	return this.query(sketch, 0, jcx_threshold);
+	return this.query(sketch, 0f, jcx_threshold);
     }
 
     public Set<LazoCandidate> query(LazoSketch sketch, float js_threshold, float jcx_threshold) {
