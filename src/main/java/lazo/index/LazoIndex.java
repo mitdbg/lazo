@@ -215,6 +215,11 @@ public class LazoIndex {
 	return true;
     }
     
+    // To remove existing data from the index, the segments are saved
+    //   when inserting data. There is a tradeoff between the default
+    //   storage needed to keep the segments vs. keeping just the hash
+    //   values (reduce data structure burden) and do more work on removal.
+    //   Depending on workloads one or the other would be better.
     public boolean remove(Object key) {
         if (keyCardinality.get(key) == null) {
             return false;
