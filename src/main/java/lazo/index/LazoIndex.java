@@ -184,35 +184,35 @@ public class LazoIndex {
     }
 
     public boolean insert(Object key, LazoSketch sketch) {
-    	// Store cardinality of key
-    	keyCardinality.put(key, sketch.getCardinality());
-    	// Obtain segments of this sketch
-    	List<long[]> segments = new ArrayList<>();
-    	for (int start : this.hashRanges) {
-    	    int end = start + this.gcdSliceSize;
-    	    long[] segment = Arrays.copyOfRange(sketch.getHashValues(), start, end);
-    	    segments.add(segment);
-    	}
-    	// Insert key in the hashmap handling each band
-    	for (int i = 0; i < this.gcdBands; i++) {
-    	    long[] sg = segments.get(i);
-    	    Map<Long, Set<Object>> hashTable = hashTables.get(i);
-    	    long segId = segmentHash(sg);
-    	    if (hashTable.get(segId) == null) {
-        		Set<Object> l = new HashSet<>();
-        		hashTable.put(segId, l);
-    	    }
-    	    hashTable.get(segId).add(key);
-    	    
-    	    // Storing segment information
-    	    Map<Object, Set<Long>> segmentIdInfo = segmentIds.get(i);
-    	    if (segmentIdInfo.get(key) == null) {
-    	        Set<Long> l = new HashSet<>();
-    	        segmentIdInfo.put(key, l);
-    	    }
-    	    segmentIdInfo.get(key).add(segId);
-    	}
-    	return true;
+	// Store cardinality of key
+	keyCardinality.put(key, sketch.getCardinality());
+	// Obtain segments of this sketch
+	List<long[]> segments = new ArrayList<>();
+	for (int start : this.hashRanges) {
+	    int end = start + this.gcdSliceSize;
+	    long[] segment = Arrays.copyOfRange(sketch.getHashValues(), start, end);
+	    segments.add(segment);
+	}
+	// Insert key in the hashmap handling each band
+	for (int i = 0; i < this.gcdBands; i++) {
+	    long[] sg = segments.get(i);
+	    Map<Long, Set<Object>> hashTable = hashTables.get(i);
+	    long segId = segmentHash(sg);
+	    if (hashTable.get(segId) == null) {
+		Set<Object> l = new HashSet<>();
+		hashTable.put(segId, l);
+	    }
+	    hashTable.get(segId).add(key);
+
+	    // Storing segment information
+	    Map<Object, Set<Long>> segmentIdInfo = segmentIds.get(i);
+	    if (segmentIdInfo.get(key) == null) {
+	        Set<Long> l = new HashSet<>();
+	        segmentIdInfo.put(key, l);
+	    }
+	    segmentIdInfo.get(key).add(segId);
+	}
+	return true;
     }
     
     public boolean remove(Object key) {
