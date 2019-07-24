@@ -139,4 +139,8 @@ public class LazoSketch implements Sketch {
 	return merged;
     }
 
+    public void setCardinality(long cardinality) {
+        this.cardinality = cardinality;
+    }
+
 }

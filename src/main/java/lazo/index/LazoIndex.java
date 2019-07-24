@@ -30,6 +30,7 @@ public class LazoIndex {
     private int gcdSliceSize;
     private int gcdBands;
     private List<Map<Long, Set<Object>>> hashTables;
+    private List<Map<Object, Set<Long>>> segmentIds;
     private int[] hashRanges;
     private Map<Object, Long> keyCardinality;
 
@@ -98,11 +99,14 @@ public class LazoIndex {
 	this.gcdSliceSize = gcdSliceSize;
 	this.gcdBands = gcdBands;
 	this.hashTables = new ArrayList<>();
+	this.segmentIds = new ArrayList<>();
 	this.hashRanges = new int[gcdBands];
 	// hash tables
 	for (int i = 0; i < gcdBands; i++) {
 	    Map<Long, Set<Object>> mp = new HashMap<>();
 	    hashTables.add(mp);
+	    Map<Object, Set<Long>> l = new HashMap<>();
+	    segmentIds.add(l);
 	}
 	// hash ranges
 	for (int i = 0; i < hashRanges.length; i++) {
@@ -199,8 +203,48 @@ public class LazoIndex {
 		hashTable.put(segId, l);
 	    }
 	    hashTable.get(segId).add(key);
+
+	    // Storing segment information
+	    Map<Object, Set<Long>> segmentIdInfo = segmentIds.get(i);
+	    if (segmentIdInfo.get(key) == null) {
+	        Set<Long> l = new HashSet<>();
+	        segmentIdInfo.put(key, l);
+	    }
+	    segmentIdInfo.get(key).add(segId);
 	}
 	return true;
+    }
+    
+    // To remove existing data from the index, the segments are saved
+    //   when inserting data. There is a tradeoff between the default
+    //   storage needed to keep the segments vs. keeping just the hash
+    //   values (reduce data structure burden) and do more work on removal.
+    //   Depending on workloads one or the other would be better.
+    public boolean remove(Object key) {
+        if (keyCardinality.get(key) == null) {
+            return false;
+        }
+        // Remove cardinality of key
+        keyCardinality.remove(key);
+        // Remove key from hashmaps
+        for (int i = 0; i < this.gcdBands; i++) {
+            Map<Object, Set<Long>> segmentIdInfo = segmentIds.get(i);
+            Map<Long, Set<Object>> hashTable = hashTables.get(i);
+            if (segmentIdInfo.get(key) == null) continue;
+            for (long segId : segmentIdInfo.get(key)) {
+                hashTable.get(segId).remove(key);
+                if (hashTable.get(segId).isEmpty()) {
+                    hashTable.remove(segId);
+                }
+            }
+            segmentIdInfo.remove(key);
+        }
+        return true;
+    }
+    
+    public boolean update(Object key, LazoSketch sketch) {
+        this.remove(key);
+        return this.insert(key, sketch);
     }
 
     public class LazoCandidate {
