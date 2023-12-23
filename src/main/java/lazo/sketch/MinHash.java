@@ -9,7 +9,7 @@ import com.google.common.hash.HashFunction;
 
 public class MinHash implements Sketch {
 
-    private final long mersennePrime = (1 << 61) - 1;
+    private final long mersennePrime = ((long) 1 << 61) - 1;
 
     private int seed;
     private int k;

@@ -300,7 +300,7 @@ public class LazoIndex {
 		long[] segment = Arrays.copyOfRange(sketch.getHashValues(), start, end);
 		long segId = segmentHash(segment);
 
-		Map<Long, Set<Object>> hashTable = this.hashTables.get(i);
+		Map<Long, Set<Object>> hashTable = this.hashTables.get(b);
 		if (hashTable.containsKey(segId)) {
 		    Set<Object> queryResult = hashTable.get(segId);
 		    if (bandCandidates.size() == 0) {
