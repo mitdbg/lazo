@@ -12,7 +12,7 @@ import lazo.sketch.SketchType;
 
 public class IndexBenchmark {
 
-    private static long mersennePrime = (1 << 61) - 1;
+    private static long mersennePrime = ((long) 1 << 61) - 1;
     private static Random gen = new Random(111);
 
     public static List<LazoSketch> getSketches(int number, int k) {
